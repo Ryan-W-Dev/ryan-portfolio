@@ -1,0 +1,761 @@
+---
+import CardTrackScene from './CardTrackScene.astro';
+import RockFaceScene from './RockFaceScene.astro';
+---
+
+<div class="visor-sequence" data-visor-sequence>
+	<div class="visor-stage" data-visor-stage>
+		<CardTrackScene />
+		<RockFaceScene />
+
+		<div class="helmet-transition" data-helmet-transition aria-hidden="true">
+			<div class="helmet-shell" data-helmet-shell>
+				<span class="helmet-crown"></span>
+				<span class="helmet-chin"></span>
+			</div>
+
+			<div class="visor-rim" data-visor-rim>
+				<span
+					class="visor-reflection visor-reflection-primary"
+					data-visor-reflection-primary></span>
+				<span
+					class="visor-reflection visor-reflection-secondary"
+					data-visor-reflection-secondary></span>
+			</div>
+
+			<span class="helmet-fastener helmet-fastener-left"></span>
+			<span class="helmet-fastener helmet-fastener-right"></span>
+		</div>
+	</div>
+</div>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	const VISOR_SEQUENCE_TRIGGER_ID = 'extreme-card-visor-sequence';
+	const FINAL_CARD_SETTLE_VIEWPORT_RATIO = 0.25;
+	const TRANSITION_SCROLL_RATIOS = {
+		helmetForm: 0.55,
+		visorLock: 0.45,
+		visorPassThrough: 0.9,
+		rockFaceResolve: 0.35,
+	} as const;
+	const VISOR_GEOMETRY_RATIOS = {
+		lockInline: 0.43,
+		lockBlock: 0.38,
+		passLandscapeInline: 1.25,
+		passLandscapeBlock: 1.05,
+		passPortraitInlineFromBlock: 0.95,
+		passPortraitBlock: 0.68,
+		resolveLandscapeInline: 1.5,
+		resolvePortraitInlineFromBlock: 1.35,
+		resolveBlock: 1.05,
+	} as const;
+	const VISOR_PASS_SCALE = {
+		landscape: { x: 3.15, y: 3.15 },
+		portrait: { x: 3.4, y: 2.65 },
+	} as const;
+	const HELMET_PASS_SCALE = {
+		landscape: { x: 1.55, y: 1.55 },
+		portrait: { x: 1.8, y: 1.35 },
+	} as const;
+	const CARD_COPY_EXIT_DURATION_RATIO = 0.58;
+	const ABOUT_COPY_TIMING = {
+		delay: 0.68,
+		duration: 0.32,
+	} as const;
+
+	const FINAL_CARD_SETTLED_LABEL = 'final-card-settled';
+	const VISOR_HANDOFF_LABEL = 'visor-handoff';
+	const HELMET_FORM_LABEL = 'helmet-form';
+	const VISOR_LOCK_LABEL = 'visor-lock';
+	const VISOR_PASS_THROUGH_LABEL = 'visor-pass-through';
+	const ROCK_FACE_RESOLVE_LABEL = 'rock-face-resolve';
+
+	const visorSequenceWindow = window as Window & {
+		__visorSequenceCleanup?: () => void;
+	};
+
+	visorSequenceWindow.__visorSequenceCleanup?.();
+
+	const initialiseVisorSequence = () => {
+		const sequence = document.querySelector<HTMLElement>(
+			'[data-visor-sequence]',
+		);
+		const stage = sequence?.querySelector<HTMLElement>('[data-visor-stage]');
+		const cardScene = stage?.querySelector<HTMLElement>('[data-card-scene]');
+		const cardViewport = cardScene?.querySelector<HTMLElement>(
+			'[data-card-viewport]',
+		);
+		const track =
+			cardScene?.querySelector<HTMLOListElement>('[data-card-track]');
+		const finalCard = track?.lastElementChild as HTMLElement | null;
+		const cardCopy = track
+			? Array.from(track.querySelectorAll<HTMLElement>('article'))
+			: [];
+		const rockScene = stage?.querySelector<HTMLElement>('[data-rock-scene]');
+		const aboutStatement = rockScene?.querySelector<HTMLElement>(
+			'[data-about-statement]',
+		);
+		const helmetTransition = stage?.querySelector<HTMLElement>(
+			'[data-helmet-transition]',
+		);
+		const helmetShell = helmetTransition?.querySelector<HTMLElement>(
+			'[data-helmet-shell]',
+		);
+		const visorRim =
+			helmetTransition?.querySelector<HTMLElement>('[data-visor-rim]');
+		const primaryReflection = helmetTransition?.querySelector<HTMLElement>(
+			'[data-visor-reflection-primary]',
+		);
+		const secondaryReflection = helmetTransition?.querySelector<HTMLElement>(
+			'[data-visor-reflection-secondary]',
+		);
+
+		if (
+			!sequence ||
+			!stage ||
+			!cardScene ||
+			!cardViewport ||
+			!track ||
+			!finalCard ||
+			cardCopy.length === 0 ||
+			!rockScene ||
+			!aboutStatement ||
+			!helmetTransition ||
+			!helmetShell ||
+			!visorRim ||
+			!primaryReflection ||
+			!secondaryReflection
+		) {
+			return;
+		}
+
+		ScrollTrigger.getById(VISOR_SEQUENCE_TRIGGER_ID)?.kill();
+
+		const horizontalTravel = () =>
+			Math.max(0, track.scrollWidth - cardViewport.clientWidth);
+		const viewportDistance = (ratio: number) =>
+			Math.max(1, stage.clientHeight * ratio);
+		const alignedFinalCardX = (travelDistance: number) => {
+			const finalCardCenter =
+				finalCard.offsetLeft + finalCard.offsetWidth / 2 - travelDistance;
+			const viewportCenter = cardViewport.clientWidth / 2;
+
+			return -travelDistance + viewportCenter - finalCardCenter;
+		};
+		const responsiveVisorGeometry = () => {
+			const isPortrait = stage.clientHeight > stage.clientWidth;
+			const lockInlineRadius =
+				visorRim.offsetWidth * VISOR_GEOMETRY_RATIOS.lockInline;
+			const lockBlockRadius =
+				visorRim.offsetHeight * VISOR_GEOMETRY_RATIOS.lockBlock;
+			const passInlineRadius = isPortrait
+				? Math.max(
+						stage.clientWidth * VISOR_GEOMETRY_RATIOS.passLandscapeInline,
+						stage.clientHeight *
+							VISOR_GEOMETRY_RATIOS.passPortraitInlineFromBlock,
+					)
+				: stage.clientWidth * VISOR_GEOMETRY_RATIOS.passLandscapeInline;
+			const passBlockRadius =
+				stage.clientHeight *
+				(isPortrait
+					? VISOR_GEOMETRY_RATIOS.passPortraitBlock
+					: VISOR_GEOMETRY_RATIOS.passLandscapeBlock);
+			const resolveInlineRadius = isPortrait
+				? Math.max(
+						stage.clientWidth * VISOR_GEOMETRY_RATIOS.resolveLandscapeInline,
+						stage.clientHeight *
+							VISOR_GEOMETRY_RATIOS.resolvePortraitInlineFromBlock,
+					)
+				: stage.clientWidth * VISOR_GEOMETRY_RATIOS.resolveLandscapeInline;
+			const resolveBlockRadius =
+				stage.clientHeight * VISOR_GEOMETRY_RATIOS.resolveBlock;
+
+			return {
+				lockClip: `ellipse(${lockInlineRadius}px ${lockBlockRadius}px at 50% 50%)`,
+				passClip: `ellipse(${passInlineRadius}px ${passBlockRadius}px at 50% 50%)`,
+				resolveClip: `ellipse(${resolveInlineRadius}px ${resolveBlockRadius}px at 50% 50%)`,
+				rimPassScale: isPortrait
+					? VISOR_PASS_SCALE.portrait
+					: VISOR_PASS_SCALE.landscape,
+				helmetPassScale: isPortrait
+					? HELMET_PASS_SCALE.portrait
+					: HELMET_PASS_SCALE.landscape,
+			};
+		};
+
+		let context: gsap.Context | undefined;
+		let timeline: gsap.core.Timeline | undefined;
+		let resizeFrame: number | undefined;
+		let disposed = false;
+
+		const activeStyles = new Map<HTMLElement, string>([
+			[track, 'transform'],
+			[cardViewport, 'transform, opacity'],
+			[finalCard, 'transform, border-radius'],
+			[rockScene, 'transform, clip-path'],
+			[aboutStatement, 'transform, opacity'],
+			[helmetTransition, 'transform, opacity'],
+			[helmetShell, 'transform'],
+			[visorRim, 'transform'],
+			[primaryReflection, 'transform, opacity'],
+			[secondaryReflection, 'transform, opacity'],
+		]);
+		cardCopy.forEach((element) => {
+			activeStyles.set(element, 'transform, opacity');
+		});
+
+		const setSequenceActive = (isActive: boolean) => {
+			activeStyles.forEach((willChange, element) => {
+				if (isActive) {
+					element.style.willChange = willChange;
+					return;
+				}
+
+				element.style.removeProperty('will-change');
+			});
+		};
+
+		const revertTimeline = () => {
+			setSequenceActive(false);
+			timeline?.scrollTrigger?.kill();
+			timeline?.kill();
+			timeline = undefined;
+			context?.revert();
+			context = undefined;
+		};
+
+		const buildTimeline = () => {
+			revertTimeline();
+
+			const travelDistance = horizontalTravel();
+			const settleDistance = viewportDistance(FINAL_CARD_SETTLE_VIEWPORT_RATIO);
+			const helmetFormDistance = viewportDistance(
+				TRANSITION_SCROLL_RATIOS.helmetForm,
+			);
+			const visorLockDistance = viewportDistance(
+				TRANSITION_SCROLL_RATIOS.visorLock,
+			);
+			const visorPassThroughDistance = viewportDistance(
+				TRANSITION_SCROLL_RATIOS.visorPassThrough,
+			);
+			const rockFaceResolveDistance = viewportDistance(
+				TRANSITION_SCROLL_RATIOS.rockFaceResolve,
+			);
+			const transitionDistance =
+				helmetFormDistance +
+				visorLockDistance +
+				visorPassThroughDistance +
+				rockFaceResolveDistance;
+			const totalScrollDistance =
+				travelDistance + settleDistance + transitionDistance;
+			const settleState = { progress: 0 };
+			const visorGeometry = responsiveVisorGeometry();
+			const aboutRevealStart = `${VISOR_PASS_THROUGH_LABEL}+=${visorPassThroughDistance * ABOUT_COPY_TIMING.delay}`;
+
+			context = gsap.context(() => {
+				gsap.set(track, { x: 0 });
+				gsap.set(cardViewport, {
+					autoAlpha: 1,
+					rotation: 0,
+					scale: 1,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(cardCopy, {
+					autoAlpha: 1,
+					yPercent: 0,
+				});
+				gsap.set(finalCard, {
+					borderRadius: 0,
+					scale: 1,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(rockScene, {
+					clipPath: 'ellipse(0% 0% at 50% 50%)',
+					rotation: -2.4,
+					scale: 1.16,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(aboutStatement, {
+					autoAlpha: 0,
+					yPercent: 8,
+				});
+				gsap.set(helmetTransition, {
+					autoAlpha: 0,
+					rotation: -1.5,
+					scale: 0.96,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(helmetShell, {
+					rotation: -4,
+					scale: 0.76,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(visorRim, {
+					rotation: -4,
+					scaleX: 0.72,
+					scaleY: 0.72,
+					transformOrigin: '50% 50%',
+				});
+				gsap.set(primaryReflection, {
+					autoAlpha: 0,
+					xPercent: -135,
+				});
+				gsap.set(secondaryReflection, {
+					autoAlpha: 0,
+					xPercent: -90,
+				});
+
+				timeline = gsap
+					.timeline({
+						defaults: { ease: 'none' },
+						scrollTrigger: {
+							id: VISOR_SEQUENCE_TRIGGER_ID,
+							trigger: sequence,
+							start: 'top top',
+							end: `+=${Math.max(totalScrollDistance, 1)}`,
+							scrub: true,
+							pin: stage,
+							anticipatePin: 1,
+							invalidateOnRefresh: true,
+							onEnter: () => setSequenceActive(true),
+							onEnterBack: () => setSequenceActive(true),
+							onLeave: () => setSequenceActive(false),
+							onLeaveBack: () => setSequenceActive(false),
+							onRefresh: (trigger) => setSequenceActive(trigger.isActive),
+						},
+					})
+					.to(track, {
+						x: -travelDistance,
+						duration: Math.max(travelDistance, 1),
+					})
+					.addLabel(FINAL_CARD_SETTLED_LABEL)
+					.to(settleState, {
+						progress: 1,
+						duration: settleDistance,
+					})
+					.addLabel(VISOR_HANDOFF_LABEL)
+					.addLabel(HELMET_FORM_LABEL)
+					.to(
+						track,
+						{
+							x: alignedFinalCardX(travelDistance),
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						cardViewport,
+						{
+							rotation: -1.2,
+							scale: 0.92,
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						cardCopy,
+						{
+							autoAlpha: 0,
+							yPercent: -10,
+							duration: helmetFormDistance * CARD_COPY_EXIT_DURATION_RATIO,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						finalCard,
+						{
+							borderRadius: '48% 52% 44% 46% / 38% 40% 58% 60%',
+							scale: 0.96,
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						helmetTransition,
+						{
+							autoAlpha: 1,
+							rotation: 0,
+							scale: 1,
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						helmetShell,
+						{
+							rotation: 0,
+							scale: 1,
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.to(
+						visorRim,
+						{
+							rotation: 0,
+							scaleX: 1,
+							scaleY: 1,
+							duration: helmetFormDistance,
+						},
+						HELMET_FORM_LABEL,
+					)
+					.addLabel(VISOR_LOCK_LABEL)
+					.to(
+						cardViewport,
+						{
+							rotation: 1.4,
+							scale: 0.84,
+							duration: visorLockDistance,
+						},
+						VISOR_LOCK_LABEL,
+					)
+					.to(
+						rockScene,
+						{
+							clipPath: visorGeometry.lockClip,
+							rotation: -1.2,
+							scale: 1.09,
+							duration: visorLockDistance,
+						},
+						VISOR_LOCK_LABEL,
+					)
+					.to(
+						primaryReflection,
+						{
+							autoAlpha: 0.62,
+							xPercent: -18,
+							duration: visorLockDistance,
+						},
+						VISOR_LOCK_LABEL,
+					)
+					.to(
+						secondaryReflection,
+						{
+							autoAlpha: 0.36,
+							xPercent: 5,
+							duration: visorLockDistance,
+						},
+						VISOR_LOCK_LABEL,
+					)
+					.addLabel(VISOR_PASS_THROUGH_LABEL)
+					.to(
+						cardViewport,
+						{
+							autoAlpha: 0.16,
+							rotation: -2.2,
+							scale: 0.7,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						rockScene,
+						{
+							clipPath: visorGeometry.passClip,
+							rotation: 0.45,
+							scale: 1.015,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						helmetTransition,
+						{
+							rotation: 1.8,
+							scale: 1.08,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						helmetShell,
+						{
+							rotation: 2.5,
+							scaleX: visorGeometry.helmetPassScale.x,
+							scaleY: visorGeometry.helmetPassScale.y,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						visorRim,
+						{
+							rotation: 2.2,
+							scaleX: visorGeometry.rimPassScale.x,
+							scaleY: visorGeometry.rimPassScale.y,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						primaryReflection,
+						{
+							autoAlpha: 0.28,
+							xPercent: 130,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						secondaryReflection,
+						{
+							autoAlpha: 0,
+							xPercent: 155,
+							duration: visorPassThroughDistance,
+						},
+						VISOR_PASS_THROUGH_LABEL,
+					)
+					.to(
+						aboutStatement,
+						{
+							autoAlpha: 1,
+							yPercent: 0,
+							duration: visorPassThroughDistance * ABOUT_COPY_TIMING.duration,
+						},
+						aboutRevealStart,
+					)
+					.addLabel(ROCK_FACE_RESOLVE_LABEL)
+					.to(
+						rockScene,
+						{
+							clipPath: visorGeometry.resolveClip,
+							rotation: 0,
+							scale: 1,
+							duration: rockFaceResolveDistance,
+						},
+						ROCK_FACE_RESOLVE_LABEL,
+					)
+					.to(
+						helmetTransition,
+						{
+							autoAlpha: 0,
+							scale: 3.35,
+							duration: rockFaceResolveDistance,
+						},
+						ROCK_FACE_RESOLVE_LABEL,
+					)
+					.to(
+						cardViewport,
+						{
+							autoAlpha: 0,
+							duration: rockFaceResolveDistance * 0.35,
+						},
+						ROCK_FACE_RESOLVE_LABEL,
+					);
+			}, sequence);
+		};
+
+		const handleResize = () => {
+			if (disposed) {
+				return;
+			}
+
+			if (resizeFrame !== undefined) {
+				window.cancelAnimationFrame(resizeFrame);
+			}
+
+			resizeFrame = window.requestAnimationFrame(() => {
+				resizeFrame = undefined;
+				buildTimeline();
+				ScrollTrigger.refresh();
+			});
+		};
+
+		const cleanup = () => {
+			if (disposed) {
+				return;
+			}
+
+			disposed = true;
+			window.removeEventListener('resize', handleResize);
+			document.removeEventListener('astro:before-swap', cleanup);
+
+			if (resizeFrame !== undefined) {
+				window.cancelAnimationFrame(resizeFrame);
+				resizeFrame = undefined;
+			}
+
+			revertTimeline();
+
+			if (visorSequenceWindow.__visorSequenceCleanup === cleanup) {
+				delete visorSequenceWindow.__visorSequenceCleanup;
+			}
+		};
+
+		buildTimeline();
+		window.addEventListener('resize', handleResize, { passive: true });
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+
+		visorSequenceWindow.__visorSequenceCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+
+		ScrollTrigger.refresh();
+	};
+
+	initialiseVisorSequence();
+</script>
+
+<style>
+	.visor-sequence {
+		position: relative;
+		background: var(--color-surface);
+	}
+
+	.visor-stage {
+		position: relative;
+		isolation: isolate;
+		inline-size: 100%;
+		block-size: 100vh;
+		block-size: 100svh;
+		overflow: clip;
+		perspective: 80rem;
+		background: var(--color-surface);
+	}
+
+	.visor-stage :global([data-card-scene]),
+	.visor-stage :global([data-rock-scene]) {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		min-block-size: 100%;
+	}
+
+	.visor-stage :global([data-card-scene]) {
+		z-index: 1;
+	}
+
+	.visor-stage :global([data-rock-scene]) {
+		z-index: 2;
+		clip-path: ellipse(0% 0% at 50% 50%);
+	}
+
+	.visor-stage :global([data-about-statement]) {
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	.helmet-transition {
+		position: absolute;
+		z-index: 3;
+		inset: 0;
+		overflow: clip;
+		pointer-events: none;
+	}
+
+	.helmet-shell,
+	.visor-rim {
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	.helmet-shell {
+		inline-size: min(94vw, 76rem);
+		block-size: min(78svh, 48rem);
+		border: clamp(2.75rem, 8vw, 7rem) solid #171715;
+		border-radius: 46% 54% 44% 50% / 38% 42% 58% 62%;
+		background: transparent;
+	}
+
+	.helmet-crown,
+	.helmet-chin {
+		position: absolute;
+		display: block;
+		background: #171715;
+	}
+
+	.helmet-crown {
+		inset-block-start: -17%;
+		inset-inline: 12% 8%;
+		block-size: 22%;
+		border-radius: 55% 45% 16% 14% / 82% 76% 24% 20%;
+	}
+
+	.helmet-chin {
+		inset-inline-end: -5%;
+		inset-block-end: -20%;
+		inline-size: 46%;
+		block-size: 31%;
+		clip-path: polygon(0 0, 100% 18%, 82% 100%, 18% 76%);
+	}
+
+	.visor-rim {
+		z-index: 2;
+		inline-size: min(72vw, 58rem);
+		block-size: min(48svh, 30rem);
+		overflow: hidden;
+		border: clamp(0.65rem, 1.8vw, 1.5rem) solid #0f0f0e;
+		border-radius: 48% 52% 44% 46% / 38% 40% 58% 60%;
+		box-shadow: 0 0 0 120vmax rgb(15 15 14 / 92%);
+	}
+
+	.visor-rim::after {
+		position: absolute;
+		inset: clamp(0.45rem, 1.2vw, 1rem);
+		border-block-start: 1px solid rgb(255 255 255 / 46%);
+		border-radius: inherit;
+		content: '';
+	}
+
+	.visor-reflection {
+		position: absolute;
+		display: block;
+		border: 1px solid rgb(255 255 255 / 56%);
+		border-inline-color: transparent;
+		border-block-end-color: transparent;
+		border-radius: 50%;
+		transform: rotate(-14deg);
+	}
+
+	.visor-reflection-primary {
+		inset-block-start: 8%;
+		inset-inline-start: 28%;
+		inline-size: 58%;
+		block-size: 36%;
+	}
+
+	.visor-reflection-secondary {
+		inset-block-start: 22%;
+		inset-inline-start: 12%;
+		inline-size: 34%;
+		block-size: 18%;
+	}
+
+	.helmet-fastener {
+		position: absolute;
+		z-index: 4;
+		inset-block-start: 58%;
+		inline-size: clamp(0.85rem, 2vw, 1.5rem);
+		aspect-ratio: 1;
+		border: 1px solid rgb(255 255 255 / 48%);
+		border-radius: 50%;
+		background: #171715;
+	}
+
+	.helmet-fastener-left {
+		inset-inline-start: clamp(1rem, 8vw, 8rem);
+	}
+
+	.helmet-fastener-right {
+		inset-inline-end: clamp(1rem, 8vw, 8rem);
+	}
+
+	@media (max-width: 40rem) {
+		.helmet-shell {
+			inline-size: min(158vw, 44rem);
+			block-size: clamp(22rem, 52svh, 27rem);
+		}
+
+		.visor-rim {
+			inline-size: min(140vw, 38rem);
+			block-size: clamp(11rem, 28svh, 15rem);
+		}
+	}
+</style>
