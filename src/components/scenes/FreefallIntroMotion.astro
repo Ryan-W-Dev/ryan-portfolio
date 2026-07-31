@@ -48,6 +48,7 @@
 	}
 
 	const FREEFALL_TIMELINE_ID = 'freefall-intro';
+	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	const TERRAIN_SVG_ORIGIN = '600 600';
 	const MOTION = {
 		terminalVelocity: 15,
@@ -321,6 +322,11 @@
 			}
 		};
 
+		const completeIntro = () => {
+			cleanup();
+			window.dispatchEvent(new Event(FREEFALL_COMPLETE_EVENT));
+		};
+
 		const handleVisibilityChange = () => {
 			if (!timeline || disposed) {
 				return;
@@ -481,7 +487,7 @@
 			const builtTimeline = gsap.timeline({
 				id: FREEFALL_TIMELINE_ID,
 				paused: true,
-				onComplete: cleanup,
+				onComplete: completeIntro,
 			});
 			timeline = builtTimeline;
 
