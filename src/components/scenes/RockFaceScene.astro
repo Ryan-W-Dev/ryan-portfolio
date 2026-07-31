@@ -1,0 +1,81 @@
+<section class="scene rock-face-scene" aria-labelledby="about-statement">
+	<div class="rock-face-geometry" aria-hidden="true">
+		<span class="route-line"></span>
+		<span class="route-anchor route-anchor-start"></span>
+		<span class="route-anchor route-anchor-middle"></span>
+		<span class="route-anchor route-anchor-end"></span>
+	</div>
+
+	<p id="about-statement">
+		I like my sports extreme and my websites anything but ordinary.
+	</p>
+</section>
+
+<style>
+	.rock-face-scene {
+		grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
+		gap: clamp(2rem, 8vw, 8rem);
+		background: var(--color-placeholder);
+	}
+
+	.rock-face-geometry {
+		position: relative;
+		inline-size: min(100%, 38rem);
+		block-size: min(65svh, 42rem);
+		border: 1px solid var(--color-ink);
+	}
+
+	.route-line {
+		position: absolute;
+		inset-block: 12%;
+		inset-inline-start: 48%;
+		inline-size: 1px;
+		background: var(--color-ink);
+		transform: rotate(12deg);
+		transform-origin: center;
+	}
+
+	.route-anchor {
+		position: absolute;
+		inline-size: 1rem;
+		aspect-ratio: 1;
+		border: 1px solid var(--color-ink);
+		border-radius: 50%;
+		background: var(--color-surface);
+	}
+
+	.route-anchor-start {
+		inset-block-end: 10%;
+		inset-inline-start: 38%;
+	}
+
+	.route-anchor-middle {
+		inset-block-start: 47%;
+		inset-inline-start: 52%;
+	}
+
+	.route-anchor-end {
+		inset-block-start: 9%;
+		inset-inline-start: 58%;
+	}
+
+	p {
+		position: relative;
+		max-inline-size: 20ch;
+		font-size: clamp(2.25rem, 6vw, 5.5rem);
+		font-weight: 700;
+		line-height: 0.98;
+		letter-spacing: -0.05em;
+	}
+
+	@media (max-width: 48rem) {
+		.rock-face-scene {
+			grid-template-columns: 1fr;
+			align-content: center;
+		}
+
+		.rock-face-geometry {
+			block-size: 38svh;
+		}
+	}
+</style>

@@ -1,0 +1,160 @@
+---
+interface CardDirection {
+	title: string;
+	line: string;
+}
+
+const cards = [
+	{ title: 'FREEFALL', line: 'Commit to the drop.' },
+	{ title: 'AIRTIME', line: 'Make the impossible feel weightless.' },
+	{ title: 'LINE', line: 'Choose it. Build it. Send it.' },
+	{ title: 'GRIP', line: 'Precision over panic.' },
+	{ title: 'FLOW', line: 'Every move leads to the next.' },
+	{ title: 'SUMMIT', line: 'Finish higher than you started.' },
+] satisfies CardDirection[];
+---
+
+<section
+	class="scene card-sequence"
+	data-card-scene
+	aria-label="Scroll-driven extreme-sports cards"
+>
+	<div class="card-viewport" data-card-viewport>
+		<ol class="card-track" data-card-track>
+			{
+				cards.map((card) => (
+					<li class="extreme-card">
+						<article>
+							<h2>{card.title}</h2>
+							<p>{card.line}</p>
+						</article>
+					</li>
+				))
+			}
+		</ol>
+	</div>
+</section>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	const initialiseCardTrack = () => {
+		const scene = document.querySelector<HTMLElement>('[data-card-scene]');
+		const viewport = scene?.querySelector<HTMLElement>('[data-card-viewport]');
+		const track = scene?.querySelector<HTMLOListElement>('[data-card-track]');
+
+		if (!scene || !viewport || !track) {
+			return;
+		}
+
+		ScrollTrigger.getById('extreme-card-track')?.kill();
+		gsap.set(track, { x: 0 });
+
+		const horizontalTravel = () =>
+			Math.max(0, track.scrollWidth - viewport.clientWidth);
+
+		const motion = gsap.matchMedia();
+
+		motion.add('(prefers-reduced-motion: no-preference)', () => {
+			const cardTween = gsap.to(track, {
+				x: () => -horizontalTravel(),
+				ease: 'none',
+				scrollTrigger: {
+					id: 'extreme-card-track',
+					trigger: scene,
+					start: 'top top',
+					end: () => `+=${Math.max(horizontalTravel(), 1)}`,
+					scrub: true,
+					pin: true,
+					anticipatePin: 1,
+					invalidateOnRefresh: true,
+				},
+			});
+
+			return () => cardTween.kill();
+		});
+
+		void document.fonts.ready.then(() => ScrollTrigger.refresh());
+	};
+
+	initialiseCardTrack();
+</script>
+
+<style>
+	.card-sequence {
+		display: block;
+		padding: 0;
+		background: var(--color-surface);
+	}
+
+	.card-viewport {
+		display: flex;
+		align-items: center;
+		inline-size: 100%;
+		block-size: 100vh;
+		block-size: 100svh;
+		overflow: hidden;
+	}
+
+	.card-track {
+		display: flex;
+		flex: none;
+		gap: var(--card-gap);
+		inline-size: max-content;
+		padding: 0 var(--scene-gutter);
+		margin: 0;
+		list-style: none;
+		will-change: transform;
+	}
+
+	.extreme-card {
+		flex: 0 0 var(--card-inline-size);
+		inline-size: var(--card-inline-size);
+		block-size: var(--card-block-size);
+		border: 1px solid var(--color-ink);
+		background: var(--color-panel);
+	}
+
+	article {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		block-size: 100%;
+		padding: clamp(1.5rem, 4vw, 3rem);
+	}
+
+	h2 {
+		font-size: clamp(2.5rem, 7vw, 6rem);
+		line-height: 0.9;
+		letter-spacing: -0.055em;
+	}
+
+	p {
+		max-inline-size: 28ch;
+		font-size: clamp(1rem, 2vw, 1.5rem);
+		line-height: 1.3;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.card-viewport {
+			block-size: auto;
+			overflow: visible;
+			padding: var(--scene-block-space) 0;
+		}
+
+		.card-track {
+			display: grid;
+			inline-size: 100%;
+			transform: none !important;
+			will-change: auto;
+		}
+
+		.extreme-card {
+			inline-size: min(100%, 50rem);
+			justify-self: center;
+		}
+	}
+</style>

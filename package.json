@@ -12,6 +12,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.1.6"
+    "astro": "^7.1.6",
+    "gsap": "^3.15.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

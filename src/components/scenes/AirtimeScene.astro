@@ -1,0 +1,36 @@
+<section class="scene airtime-scene" aria-label="Airtime">
+	<div class="airtime-geometry" aria-hidden="true">
+		<span class="airtime-circle"></span>
+		<span class="airtime-flight-path"></span>
+	</div>
+</section>
+
+<style>
+	.airtime-scene {
+		background: var(--color-placeholder);
+	}
+
+	.airtime-geometry {
+		position: relative;
+		inline-size: min(82vw, 68rem);
+		block-size: min(62vh, 32rem);
+	}
+
+	.airtime-circle {
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		inline-size: clamp(7rem, 18vw, 14rem);
+		aspect-ratio: 1;
+		border: 1px solid var(--color-ink);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	.airtime-flight-path {
+		position: absolute;
+		inset: 12% 0 0;
+		border-block-start: 2px solid var(--color-ink);
+		border-radius: 50% 50% 0 0;
+	}
+</style>

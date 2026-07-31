@@ -1,0 +1,68 @@
+:root {
+	--color-surface: #f2f2ee;
+	--color-panel: #ffffff;
+	--color-ink: #1d1d1b;
+	--color-line: #a5a59e;
+	--color-placeholder: #d7d7d0;
+	--scene-gutter: clamp(1.25rem, 4vw, 4rem);
+	--scene-block-space: clamp(4rem, 10vh, 8rem);
+	--card-gap: clamp(1rem, 2.5vw, 2rem);
+	--card-inline-size: clamp(18rem, 68vw, 50rem);
+	--card-block-size: min(62svh, 38rem);
+	font-family: Arial, Helvetica, sans-serif;
+	color: var(--color-ink);
+	background: var(--color-surface);
+	font-synthesis: none;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	background: var(--color-surface);
+}
+
+body {
+	margin: 0;
+	overflow-x: clip;
+	background: var(--color-surface);
+}
+
+main {
+	inline-size: 100%;
+}
+
+h1,
+h2,
+p {
+	margin: 0;
+}
+
+a {
+	color: inherit;
+}
+
+a:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 0.35rem;
+}
+
+.scene {
+	position: relative;
+	display: grid;
+	min-block-size: 100vh;
+	min-block-size: 100svh;
+	place-items: center;
+	overflow: clip;
+	padding: var(--scene-block-space) var(--scene-gutter);
+}
+
+@media (max-width: 40rem) {
+	:root {
+		--card-inline-size: 80vw;
+		--card-block-size: 64svh;
+	}
+}
