@@ -1,0 +1,590 @@
+<script>
+	import { gsap } from 'gsap';
+
+	type MotionTarget = Element | Element[];
+
+	interface TimelinePhase {
+		label: string;
+		start: number;
+		duration: number;
+		ease: string;
+	}
+
+	interface TimelineStep {
+		target: MotionTarget;
+		vars: gsap.TweenVars;
+		offsetRatio?: number;
+		durationRatio?: number;
+		ease?: string;
+	}
+
+	interface TerminalVelocityPass {
+		target: Element;
+		cycleDuration: number;
+		initialPhase: number;
+		startScale: number;
+		endScale: number;
+		maxOpacity: number;
+		fadeInRatio: number;
+		fadeOutRatio: number;
+		svgOrigin?: string;
+	}
+
+	interface TerminalVelocityFamily {
+		targets: Element[];
+		cycles: number;
+		startScale: number;
+		endScale: number;
+		maxOpacity: number;
+		fadeInRatio: number;
+		fadeOutRatio: number;
+		svgOrigin?: string;
+	}
+
+	interface TerminalVelocityRuntime extends TerminalVelocityPass {
+		setScaleX: (value: number) => void;
+		setScaleY: (value: number) => void;
+		setOpacity: (value: number) => void;
+	}
+
+	const FREEFALL_TIMELINE_ID = 'freefall-intro';
+	const TERRAIN_SVG_ORIGIN = '600 600';
+	const MOTION = {
+		terminalVelocity: 15,
+		nameArrival: 0.75,
+		circleExpansion: 1.15,
+		heroHandoff: 1.1,
+	} as const;
+	const WORLD_MOTION_DURATION = MOTION.terminalVelocity + MOTION.nameArrival;
+	const TOTAL_DURATION =
+		WORLD_MOTION_DURATION + MOTION.circleExpansion + MOTION.heroHandoff;
+	const PHASES = {
+		terminalVelocity: {
+			label: 'terminal-velocity',
+			start: 0,
+			duration: MOTION.terminalVelocity,
+			ease: 'none',
+		},
+		nameArrival: {
+			label: 'name-arrival',
+			start: MOTION.terminalVelocity,
+			duration: MOTION.nameArrival,
+			ease: 'power3.out',
+		},
+		circleExpansion: {
+			label: 'circle-expansion',
+			start: WORLD_MOTION_DURATION,
+			duration: MOTION.circleExpansion,
+			ease: 'power3.inOut',
+		},
+		heroHandoff: {
+			label: 'hero-handoff',
+			start: WORLD_MOTION_DURATION + MOTION.circleExpansion,
+			duration: MOTION.heroHandoff,
+			ease: 'power3.inOut',
+		},
+	} as const satisfies Record<string, TimelinePhase>;
+	const INTRO_COMPLETE_LABEL = 'intro-complete';
+
+	const freefallWindow = window as Window & {
+		__freefallIntroCleanup?: () => void;
+	};
+
+	freefallWindow.__freefallIntroCleanup?.();
+
+	const addTimelinePhase = (
+		timeline: gsap.core.Timeline,
+		phase: TimelinePhase,
+		steps: TimelineStep[],
+	) => {
+		timeline.addLabel(phase.label, phase.start);
+
+		steps.forEach((step) => {
+			timeline.to(
+				step.target,
+				{
+					...step.vars,
+					duration: phase.duration * (step.durationRatio ?? 1),
+					ease: step.ease ?? phase.ease,
+				},
+				phase.start + phase.duration * (step.offsetRatio ?? 0),
+			);
+		});
+	};
+
+	const passOpacityAt = (
+		phase: number,
+		maxOpacity: number,
+		fadeInRatio: number,
+		fadeOutRatio: number,
+	) => {
+		if (phase < fadeInRatio) {
+			return maxOpacity * (phase / fadeInRatio);
+		}
+
+		if (phase > 1 - fadeOutRatio) {
+			return maxOpacity * ((1 - phase) / fadeOutRatio);
+		}
+
+		return maxOpacity;
+	};
+
+	const passScaleAt = (phase: number, startScale: number, endScale: number) =>
+		startScale + (endScale - startScale) * phase;
+
+	const initialiseTerminalVelocityPass = (
+		pass: TerminalVelocityPass,
+	): TerminalVelocityRuntime => {
+		const scale = passScaleAt(
+			pass.initialPhase,
+			pass.startScale,
+			pass.endScale,
+		);
+		const opacity = passOpacityAt(
+			pass.initialPhase,
+			pass.maxOpacity,
+			pass.fadeInRatio,
+			pass.fadeOutRatio,
+		);
+
+		if (pass.svgOrigin) {
+			gsap.set(pass.target, {
+				svgOrigin: pass.svgOrigin,
+				smoothOrigin: false,
+			});
+		} else {
+			gsap.set(pass.target, { transformOrigin: '50% 50%' });
+		}
+
+		gsap.set(pass.target, {
+			scaleX: scale,
+			scaleY: scale,
+			opacity,
+		});
+
+		return {
+			...pass,
+			setScaleX: gsap.quickSetter(pass.target, 'scaleX') as (
+				value: number,
+			) => void,
+			setScaleY: gsap.quickSetter(pass.target, 'scaleY') as (
+				value: number,
+			) => void,
+			setOpacity: gsap.quickSetter(pass.target, 'opacity') as (
+				value: number,
+			) => void,
+		};
+	};
+
+	const renderTerminalVelocityPasses = (
+		passes: TerminalVelocityRuntime[],
+		elapsed: number,
+	) => {
+		passes.forEach((pass) => {
+			const phase = (pass.initialPhase + elapsed / pass.cycleDuration) % 1;
+			const scale = passScaleAt(phase, pass.startScale, pass.endScale);
+
+			pass.setScaleX(scale);
+			pass.setScaleY(scale);
+			pass.setOpacity(
+				passOpacityAt(
+					phase,
+					pass.maxOpacity,
+					pass.fadeInRatio,
+					pass.fadeOutRatio,
+				),
+			);
+		});
+	};
+
+	const initialiseFreefallIntro = () => {
+		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
+		const world = intro?.querySelector<HTMLElement>('[data-freefall-world]');
+		const terrainPlane = intro?.querySelector<SVGSVGElement>('.terrain-plane');
+		const terrainFar = Array.from(
+			intro?.querySelectorAll<SVGGElement>(
+				'[data-depth-family="terrain-far"]',
+			) ?? [],
+		);
+		const terrainMid = Array.from(
+			intro?.querySelectorAll<SVGGElement>(
+				'[data-depth-family="terrain-mid"]',
+			) ?? [],
+		);
+		const terrainNear = Array.from(
+			intro?.querySelectorAll<SVGGElement>(
+				'[data-depth-family="terrain-near"]',
+			) ?? [],
+		);
+		const cloudFar = Array.from(
+			intro?.querySelectorAll<HTMLElement>('[data-depth-family="cloud-far"]') ??
+				[],
+		);
+		const cloudNear = Array.from(
+			intro?.querySelectorAll<HTMLElement>(
+				'[data-depth-family="cloud-near"]',
+			) ?? [],
+		);
+		const atmosphere = Array.from(
+			intro?.querySelectorAll<HTMLElement>(
+				'[data-depth-family="atmosphere"]',
+			) ?? [],
+		);
+		const fallBlur = Array.from(
+			intro?.querySelectorAll<HTMLElement>('[data-depth-family="fall-blur"]') ??
+				[],
+		);
+		const arrivalScene = document.querySelector<HTMLElement>(
+			'[data-arrival-scene]',
+		);
+		const arrivalCircle = arrivalScene?.querySelector<HTMLElement>(
+			'[data-arrival-circle]',
+		);
+		const arrivalTitle = arrivalScene?.querySelector<HTMLElement>(
+			'[data-arrival-title]',
+		);
+		const arrivalSubtitle = arrivalScene?.querySelector<HTMLElement>(
+			'[data-arrival-subtitle]',
+		);
+		const scrollIndicator = arrivalScene?.querySelector<HTMLElement>(
+			'[data-scroll-indicator]',
+		);
+
+		if (
+			!intro ||
+			!world ||
+			!terrainPlane ||
+			terrainFar.length < 2 ||
+			terrainMid.length < 2 ||
+			terrainNear.length < 2 ||
+			cloudFar.length < 2 ||
+			cloudNear.length < 2 ||
+			atmosphere.length === 0 ||
+			fallBlur.length === 0 ||
+			!arrivalScene ||
+			!arrivalCircle ||
+			!arrivalTitle ||
+			!arrivalSubtitle ||
+			!scrollIndicator
+		) {
+			intro?.setAttribute('hidden', '');
+			return;
+		}
+
+		intro.hidden = false;
+		delete intro.dataset.sequenceReady;
+
+		const originalRootOverflow = document.documentElement.style.overflow;
+		const originalRootScrollbarGutter =
+			document.documentElement.style.scrollbarGutter;
+		const originalBodyOverflow = document.body.style.overflow;
+		const originalBodyTouchAction = document.body.style.touchAction;
+		const originalScrollRestoration = history.scrollRestoration;
+		const viewportDiagonal = Math.hypot(window.innerWidth, window.innerHeight);
+		const circleCoverScaleX =
+			(viewportDiagonal * 1.19) / Math.max(arrivalCircle.offsetWidth, 1);
+		const circleCoverScaleY =
+			(viewportDiagonal * 1.16) / Math.max(arrivalCircle.offsetHeight, 1);
+
+		let context: gsap.Context | undefined;
+		let timeline: gsap.core.Timeline | undefined;
+		let disposed = false;
+		let pausedForVisibility = false;
+
+		const restorePageFlow = () => {
+			document.documentElement.style.overflow = originalRootOverflow;
+			document.documentElement.style.scrollbarGutter =
+				originalRootScrollbarGutter;
+			document.body.style.overflow = originalBodyOverflow;
+			document.body.style.touchAction = originalBodyTouchAction;
+			history.scrollRestoration = originalScrollRestoration;
+			window.scrollTo(0, 0);
+		};
+
+		const cleanup = () => {
+			if (disposed) {
+				return;
+			}
+
+			disposed = true;
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			document.removeEventListener('astro:before-swap', cleanup);
+			timeline?.kill();
+			context?.revert();
+			timeline = undefined;
+			context = undefined;
+			intro.hidden = true;
+			restorePageFlow();
+
+			if (freefallWindow.__freefallIntroCleanup === cleanup) {
+				delete freefallWindow.__freefallIntroCleanup;
+			}
+		};
+
+		const handleVisibilityChange = () => {
+			if (!timeline || disposed) {
+				return;
+			}
+
+			if (document.hidden) {
+				if (!timeline.paused()) {
+					pausedForVisibility = true;
+					timeline.pause();
+				}
+
+				return;
+			}
+
+			if (pausedForVisibility) {
+				pausedForVisibility = false;
+				timeline.resume();
+			}
+		};
+
+		document.documentElement.style.overflow = 'hidden';
+		document.documentElement.style.scrollbarGutter = 'stable';
+		document.body.style.overflow = 'hidden';
+		document.body.style.touchAction = 'none';
+		history.scrollRestoration = 'manual';
+		window.scrollTo(0, 0);
+		void terrainPlane.getBoundingClientRect();
+
+		context = gsap.context(() => {
+			const familyConfigurations: TerminalVelocityFamily[] = [
+				{
+					targets: terrainFar,
+					cycles: 5,
+					startScale: 0.28,
+					endScale: 4.4,
+					maxOpacity: 0.58,
+					fadeInRatio: 0.12,
+					fadeOutRatio: 0.18,
+					svgOrigin: TERRAIN_SVG_ORIGIN,
+				},
+				{
+					targets: terrainMid,
+					cycles: 7,
+					startScale: 0.14,
+					endScale: 6.8,
+					maxOpacity: 0.62,
+					fadeInRatio: 0.1,
+					fadeOutRatio: 0.18,
+					svgOrigin: TERRAIN_SVG_ORIGIN,
+				},
+				{
+					targets: terrainNear,
+					cycles: 10,
+					startScale: 0.05,
+					endScale: 10.5,
+					maxOpacity: 0.52,
+					fadeInRatio: 0.08,
+					fadeOutRatio: 0.18,
+					svgOrigin: TERRAIN_SVG_ORIGIN,
+				},
+				{
+					targets: cloudFar,
+					cycles: 12,
+					startScale: 0.14,
+					endScale: 6.5,
+					maxOpacity: 0.36,
+					fadeInRatio: 0.1,
+					fadeOutRatio: 0.2,
+				},
+				{
+					targets: cloudNear,
+					cycles: 15,
+					startScale: 0.06,
+					endScale: 9,
+					maxOpacity: 0.3,
+					fadeInRatio: 0.08,
+					fadeOutRatio: 0.2,
+				},
+				{
+					targets: atmosphere,
+					cycles: 6,
+					startScale: 0.9,
+					endScale: 1.55,
+					maxOpacity: 0.16,
+					fadeInRatio: 0.12,
+					fadeOutRatio: 0.2,
+				},
+				{
+					targets: fallBlur,
+					cycles: 12,
+					startScale: 1,
+					endScale: 2.6,
+					maxOpacity: 0.1,
+					fadeInRatio: 0.1,
+					fadeOutRatio: 0.2,
+				},
+			];
+			const familyCount = familyConfigurations.length;
+			const passConfigurations = familyConfigurations.flatMap(
+				(family, familyIndex): TerminalVelocityPass[] => {
+					const {
+						targets,
+						cycles,
+						startScale,
+						endScale,
+						maxOpacity,
+						fadeInRatio,
+						fadeOutRatio,
+						svgOrigin,
+					} = family;
+					const cycleDuration = MOTION.terminalVelocity / cycles;
+
+					return targets.map((target, passIndex) => ({
+						target,
+						cycleDuration,
+						initialPhase:
+							(familyIndex / familyCount + passIndex / targets.length) % 1,
+						startScale,
+						endScale,
+						maxOpacity,
+						fadeInRatio,
+						fadeOutRatio,
+						svgOrigin,
+					}));
+				},
+			);
+			const passTargets = passConfigurations.map((pass) => pass.target);
+
+			gsap.set(passTargets, { willChange: 'transform, opacity' });
+			gsap.set(world, { willChange: 'opacity' });
+			gsap.set([arrivalCircle, arrivalTitle], {
+				willChange: 'transform, opacity',
+			});
+			gsap.set([arrivalSubtitle, scrollIndicator], {
+				willChange: 'opacity',
+			});
+
+			const passRuntimes = passConfigurations.map(
+				initialiseTerminalVelocityPass,
+			);
+			const velocityClock = { elapsed: 0 };
+
+			gsap.set(arrivalCircle, {
+				autoAlpha: 0,
+				scaleX: 0.3,
+				scaleY: 0.27,
+				rotation: -1.5,
+				transformOrigin: '50% 50%',
+			});
+			gsap.set(arrivalTitle, {
+				autoAlpha: 0,
+				yPercent: 5,
+				scale: 0.96,
+				transformOrigin: '50% 50%',
+			});
+			gsap.set([arrivalSubtitle, scrollIndicator], { autoAlpha: 0 });
+
+			const builtTimeline = gsap.timeline({
+				id: FREEFALL_TIMELINE_ID,
+				paused: true,
+				onComplete: cleanup,
+			});
+			timeline = builtTimeline;
+
+			builtTimeline
+				.addLabel(PHASES.terminalVelocity.label, PHASES.terminalVelocity.start)
+				.to(
+					velocityClock,
+					{
+						elapsed: WORLD_MOTION_DURATION,
+						duration: WORLD_MOTION_DURATION,
+						ease: 'none',
+						onUpdate: () =>
+							renderTerminalVelocityPasses(passRuntimes, velocityClock.elapsed),
+					},
+					PHASES.terminalVelocity.start,
+				);
+
+			addTimelinePhase(builtTimeline, PHASES.nameArrival, [
+				{
+					target: world,
+					vars: { autoAlpha: 0 },
+					ease: 'power2.inOut',
+				},
+				{
+					target: arrivalTitle,
+					vars: { autoAlpha: 1, yPercent: 0, scale: 1 },
+				},
+				{
+					target: arrivalCircle,
+					vars: {
+						autoAlpha: 1,
+						scaleX: 0.46,
+						scaleY: 0.42,
+						rotation: -0.6,
+						borderRadius: '48% 52% 47% 53% / 52% 46% 54% 48%',
+					},
+				},
+			]);
+
+			addTimelinePhase(builtTimeline, PHASES.circleExpansion, [
+				{
+					target: arrivalCircle,
+					vars: {
+						scaleX: circleCoverScaleX,
+						scaleY: circleCoverScaleY,
+						rotation: 1.1,
+						borderRadius: '44% 56% 52% 48% / 49% 43% 57% 51%',
+						borderColor: 'transparent',
+					},
+				},
+			]);
+
+			addTimelinePhase(builtTimeline, PHASES.heroHandoff, [
+				{
+					target: intro,
+					vars: { autoAlpha: 0 },
+					durationRatio: 0.24,
+					ease: 'power1.out',
+				},
+				{
+					target: arrivalCircle,
+					vars: {
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+						borderRadius: '50%',
+						borderColor: 'var(--color-line)',
+					},
+				},
+				{
+					target: arrivalSubtitle,
+					vars: { autoAlpha: 1 },
+					offsetRatio: 0.58,
+					durationRatio: 0.42,
+					ease: 'power2.out',
+				},
+				{
+					target: scrollIndicator,
+					vars: { autoAlpha: 1 },
+					offsetRatio: 0.66,
+					durationRatio: 0.34,
+					ease: 'power2.out',
+				},
+			]);
+
+			builtTimeline.addLabel(INTRO_COMPLETE_LABEL, TOTAL_DURATION);
+			builtTimeline.totalTime(0, true);
+			renderTerminalVelocityPasses(passRuntimes, 0);
+		}, intro);
+
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		freefallWindow.__freefallIntroCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+		intro.dataset.sequenceReady = '';
+
+		if (document.hidden) {
+			pausedForVisibility = true;
+			return;
+		}
+
+		timeline?.play();
+	};
+
+	initialiseFreefallIntro();
+</script>

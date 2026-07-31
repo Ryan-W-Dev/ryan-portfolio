@@ -146,8 +146,8 @@ These sports should shape the experience rather than appear as decorative stock 
 - Freefall
 - Aerial perspective
 - Clouds and atmosphere
-- Acceleration
-- Controlled descent
+- Terminal velocity
+- Sustained downward speed
 - Parachute-like circular expansion
 
 ### Freestyle motocross language
@@ -186,16 +186,16 @@ Every entry begins with a cinematic skydiving sequence.
 ### Camera direction
 
 - Camera points straight down toward the ground.
-- The camera begins high above the landscape.
-- It descends continuously as though the visitor is in freefall.
-- Cloud layers, atmospheric depth, scale changes, and controlled motion blur communicate height and speed.
-- The camera may make subtle stabilizing adjustments but should not spin or create motion sickness.
-- The descent lasts approximately 15 seconds before the hero transition begins.
+- The camera remains completely stationary and perpendicular to the ground.
+- The landscape, cloud layers, and atmosphere rush toward and past the viewer from a fixed central vanishing point.
+- Extreme terminal-velocity movement begins on the first visible frame and remains constant for the complete 15-second freefall.
+- Multiple independently timed depth passes recycle only while invisible so the motion never pauses or exposes a reset.
+- The freefall world maintains one uninterrupted speed and direction until the hero transition, with no destination or holding phase.
 
 ### Transition into the hero
 
-1. After the descent, the ground stabilizes around a central landing point.
-2. The loading world begins a smooth fade.
+1. At exactly 15 seconds, the loading world begins a smooth fade while continuing at full terminal velocity.
+2. The freefall world remains in motion until it is no longer visible.
 3. “RYAN WYNN” appears in the exact centre of the screen.
 4. A solid-colour circle appears behind or around the central name.
 5. The circle expands outward with a fluid, organic perimeter.
