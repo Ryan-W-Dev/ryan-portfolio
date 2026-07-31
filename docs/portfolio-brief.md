@@ -123,7 +123,7 @@ https://www.linkedin.com/in/ryan-wynn-01a784403/
 **Telegram:**
 `[TELEGRAM_URL]`
 
-**WhatsApp Messenger:**
+**WhatsApp:**
 `[WHATSAPP_URL]`
 
 Do not add a contact headline, contact paragraph, résumé link, source-code link, location, or availability text.
@@ -320,7 +320,7 @@ Content:
 - GitHub
 - LinkedIn
 - Telegram
-- WhatsApp Messenger
+- WhatsApp
 
 Experience:
 

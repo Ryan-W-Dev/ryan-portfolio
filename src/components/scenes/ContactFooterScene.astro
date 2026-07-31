@@ -1,13 +1,13 @@
 ---
 const contacts = [
-	{ label: 'Email', href: 'mailto:[PROFESSIONAL_EMAIL]' },
+	{ label: 'Email' },
 	{ label: 'GitHub', href: 'https://github.com/Ryan-W-Dev' },
 	{
 		label: 'LinkedIn',
 		href: 'https://www.linkedin.com/in/ryan-wynn-01a784403/',
 	},
-	{ label: 'Telegram', href: '[TELEGRAM_URL]' },
-	{ label: 'WhatsApp Messenger', href: '[WHATSAPP_URL]' },
+	{ label: 'Telegram' },
+	{ label: 'WhatsApp' },
 ];
 ---
 
@@ -17,7 +17,11 @@ const contacts = [
 			{
 				contacts.map((contact) => (
 					<li>
-						<a href={contact.href}>{contact.label}</a>
+						{contact.href ? (
+							<a href={contact.href}>{contact.label}</a>
+						) : (
+							<span>{contact.label}</span>
+						)}
 					</li>
 				))
 			}
@@ -44,10 +48,14 @@ const contacts = [
 		list-style: none;
 	}
 
-	a {
+	a,
+	span {
 		display: inline-block;
 		padding-block: 0.5rem;
 		font-size: clamp(1rem, 2vw, 1.25rem);
+	}
+
+	a {
 		text-underline-offset: 0.25em;
 	}
 
