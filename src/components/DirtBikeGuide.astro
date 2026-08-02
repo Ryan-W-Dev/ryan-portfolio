@@ -17,6 +17,13 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		x: number;
 		y: number;
 		rotation: number;
+		edge?: 'left' | 'corner' | 'bottom';
+	}
+
+	interface TireMetric {
+		x: number;
+		y: number;
+		outerRadius: number;
 	}
 
 	interface VisibilityRange {
@@ -37,6 +44,12 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		const suspension = guide?.querySelector<SVGGElement>(
 			'[data-bike-suspension]',
 		);
+		const artwork = guide?.querySelector<SVGSVGElement>('[data-bike-artwork]');
+		const tireCircles = guide
+			? Array.from(
+					guide.querySelectorAll<SVGCircleElement>('[data-bike-wheel] circle'),
+				)
+			: [];
 		const hero = document.querySelector<HTMLElement>('[data-arrival-scene]');
 		const transition = document.querySelector<HTMLElement>(
 			'[data-transition-copy-scene]',
@@ -49,6 +62,8 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			!guide ||
 			wheels.length !== 2 ||
 			!suspension ||
+			!artwork ||
+			tireCircles.length !== 2 ||
 			!hero ||
 			!transition ||
 			!visorSequence ||
@@ -60,6 +75,8 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		let trigger: ScrollTrigger | undefined;
 		let resizeFrame = 0;
 		let route: RoutePoint[] = [];
+		let renderedGuideWidth = 1;
+		let renderedGuideHeight = 1;
 		let visibilityRange: VisibilityRange = {
 			heroFadeStart: 0,
 			heroFadeEnd: 0,
@@ -72,8 +89,50 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			start + (end - start) * amount;
 		const documentTop = (element: HTMLElement) =>
 			element.getBoundingClientRect().top + window.scrollY;
+		const edgeContactGap = 1;
+		const artworkWidth = artwork.viewBox.baseVal.width;
+		const tireMetrics: TireMetric[] = tireCircles.map((circle) => ({
+			x: circle.cx.baseVal.value,
+			y: circle.cy.baseVal.value,
+			outerRadius:
+				circle.r.baseVal.value +
+				Number.parseFloat(window.getComputedStyle(circle).strokeWidth) / 2,
+		}));
+
+		const edgeContactAt = (rotation: number) => {
+			const scale = renderedGuideWidth / Math.max(artworkWidth, 1);
+			const originX = renderedGuideWidth / 2;
+			const originY = renderedGuideHeight / 2;
+			const radians = (rotation * Math.PI) / 180;
+			const cosine = Math.cos(radians);
+			const sine = Math.sin(radians);
+			let tireLeft = Number.POSITIVE_INFINITY;
+			let tireBottom = Number.NEGATIVE_INFINITY;
+
+			for (const tire of tireMetrics) {
+				const localX = tire.x * scale;
+				const localY = tire.y * scale;
+				const radius = tire.outerRadius * scale;
+				const centreX =
+					originX + cosine * (localX - originX) - sine * (localY - originY);
+				const centreY =
+					originY + sine * (localX - originX) + cosine * (localY - originY);
+				tireLeft = Math.min(tireLeft, centreX - radius);
+				tireBottom = Math.max(tireBottom, centreY + radius);
+			}
+
+			return {
+				leftX: edgeContactGap - tireLeft,
+				bottomY: window.innerHeight - edgeContactGap - tireBottom,
+			};
+		};
 
 		const buildRoute = () => {
+			const guideStyle = window.getComputedStyle(guide);
+			renderedGuideWidth =
+				Number.parseFloat(guideStyle.width) || guide.offsetWidth;
+			renderedGuideHeight =
+				Number.parseFloat(guideStyle.height) || guide.offsetHeight;
 			const maximum = Math.max(1, ScrollTrigger.maxScroll(window));
 			const at = (element: HTMLElement, ratio: number) =>
 				clamp((documentTop(element) + element.offsetHeight * ratio) / maximum);
@@ -99,25 +158,63 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			const leftLane = window.innerWidth < 640 ? 0.025 : 0.045;
 			const bottomLane = window.innerWidth < 640 ? 0.9 : 0.91;
 
-			route = [
-				{ progress: 0, x: leftLane, y: 0.14, rotation: 90 },
-				{ progress: at(hero, 0.16), x: leftLane, y: 0.22, rotation: 90 },
-				{ progress: at(hero, 0.86), x: leftLane, y: 0.72, rotation: 90 },
-				{ progress: at(transition, 0.42), x: leftLane, y: 0.74, rotation: 90 },
-				{ progress: at(transition, 0.72), x: 0.055, y: 0.83, rotation: 58 },
-				{ progress: at(transition, 0.96), x: 0.13, y: bottomLane, rotation: 0 },
-				{ progress: inSequence(0.08), x: 0.13, y: bottomLane, rotation: 0 },
+			const nextRoute: RoutePoint[] = [
+				{ progress: 0, x: leftLane, y: 0.14, rotation: 90, edge: 'left' },
+				{
+					progress: at(hero, 0.16),
+					x: leftLane,
+					y: 0.22,
+					rotation: 90,
+					edge: 'left',
+				},
+				{
+					progress: at(hero, 0.86),
+					x: leftLane,
+					y: 0.72,
+					rotation: 90,
+					edge: 'left',
+				},
+				{
+					progress: at(transition, 0.42),
+					x: leftLane,
+					y: 0.74,
+					rotation: 90,
+					edge: 'left',
+				},
+				{
+					progress: at(transition, 0.72),
+					x: 0.055,
+					y: 0.83,
+					rotation: 58,
+					edge: 'corner',
+				},
+				{
+					progress: at(transition, 0.96),
+					x: 0.13,
+					y: bottomLane,
+					rotation: 0,
+					edge: 'bottom',
+				},
+				{
+					progress: inSequence(0.08),
+					x: 0.13,
+					y: bottomLane,
+					rotation: 0,
+					edge: 'bottom',
+				},
 				{
 					progress: inSequence(Math.max(0.1, visorHandoffRatio - 0.05)),
 					x: 0.88,
 					y: bottomLane,
 					rotation: 0,
+					edge: 'bottom',
 				},
 				{
 					progress: inSequence(visorHandoffRatio),
 					x: 0.88,
 					y: bottomLane,
 					rotation: 0,
+					edge: 'bottom',
 				},
 				{
 					progress: inSequence(visorHandoffRatio + 0.04),
@@ -133,7 +230,8 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 				},
 				{ progress: at(footer, 0.12), x: leftLane, y: 0.72, rotation: 90 },
 				{ progress: 1, x: leftLane, y: 0.72, rotation: 90 },
-			].sort((a, b) => a.progress - b.progress);
+			];
+			route = nextRoute.sort((a, b) => a.progress - b.progress);
 
 			visibilityRange = {
 				heroFadeStart: at(hero, 0),
@@ -184,13 +282,32 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			);
 			const guideWidth = guide.offsetWidth;
 			const guideHeight = guide.offsetHeight;
-			const x =
-				interpolate(from.x, to.x, segmentProgress) *
-				(window.innerWidth - guideWidth);
-			const y =
-				interpolate(from.y, to.y, segmentProgress) *
-				(window.innerHeight - guideHeight);
+			const horizontalTravel = window.innerWidth - guideWidth;
+			const verticalTravel = window.innerHeight - guideHeight;
+			let x = interpolate(from.x, to.x, segmentProgress) * horizontalTravel;
+			let y = interpolate(from.y, to.y, segmentProgress) * verticalTravel;
 			const rotation = interpolate(from.rotation, to.rotation, segmentProgress);
+			const edgeContact = edgeContactAt(rotation);
+
+			if (from.edge === 'left' && to.edge === 'left') {
+				x = edgeContact.leftX;
+			} else if (from.edge === 'left' && to.edge === 'corner') {
+				x = edgeContact.leftX;
+				y = interpolate(
+					from.y * verticalTravel,
+					edgeContactAt(to.rotation).bottomY,
+					segmentProgress,
+				);
+			} else if (from.edge === 'corner' && to.edge === 'bottom') {
+				x = interpolate(
+					edgeContactAt(from.rotation).leftX,
+					to.x * horizontalTravel,
+					segmentProgress,
+				);
+				y = edgeContact.bottomY;
+			} else if (from.edge === 'bottom' && to.edge === 'bottom') {
+				y = edgeContact.bottomY;
+			}
 			const suspensionOffset = Math.sin(progress * Math.PI * 18) * 2.5;
 
 			const footerCursorActive = document.documentElement.hasAttribute(
@@ -200,7 +317,7 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 
 			if (reducedMotion.matches) {
 				gsap.set(guide, {
-					x: 18,
+					x: edgeContactAt(90).leftX,
 					y: window.innerHeight * 0.62,
 					rotation: 90,
 					opacity: opacity * 0.7,
