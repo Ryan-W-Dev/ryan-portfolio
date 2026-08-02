@@ -72,6 +72,10 @@ import RockFaceScene from './RockFaceScene.astro';
 		delay: 0.42,
 		duration: 0.34,
 	} as const;
+	const VISOR_WINDOW_REVEAL_TIMING = {
+		delay: 0.18,
+		duration: 0.08,
+	} as const;
 
 	const FINAL_CARD_SETTLED_LABEL = 'final-card-settled';
 	const VISOR_HANDOFF_LABEL = 'visor-handoff';
@@ -260,6 +264,7 @@ import RockFaceScene from './RockFaceScene.astro';
 					height: stage.clientHeight,
 				});
 				gsap.set(visorWindow, {
+					autoAlpha: 0,
 					width: 4,
 					height: 1,
 				});
@@ -380,6 +385,14 @@ import RockFaceScene from './RockFaceScene.astro';
 							duration: visorLockDistance,
 						},
 						VISOR_LOCK_LABEL,
+					)
+					.to(
+						visorWindow,
+						{
+							autoAlpha: 1,
+							duration: visorLockDistance * VISOR_WINDOW_REVEAL_TIMING.duration,
+						},
+						`${VISOR_LOCK_LABEL}+=${visorLockDistance * VISOR_WINDOW_REVEAL_TIMING.delay}`,
 					)
 					.to(
 						primaryReflection,

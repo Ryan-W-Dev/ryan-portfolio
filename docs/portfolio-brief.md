@@ -196,7 +196,7 @@ The page uses semantic Astro components and native vertical scrolling.
 - Blinks use irregular timing with an occasional double blink.
 - Blinking pauses while the footer is offscreen, the tab is hidden, or reduced motion is requested.
 - With a fine pointer, the same small bike artwork directly replaces the normal cursor at the established footer activation point and follows the live footer pointer through one animation-frame loop. It remains decorative and never captures input.
-- The cursor bike is layered above the rider portrait, helmet, face, eyes, and blinking-eye overlays, while the contact navigation remains above it and fully interactive.
+- The cursor bike is layered above the rider portrait, helmet, face, eyes, blinking-eye overlays, and contact navigation. It remains non-interactive so the contact links retain their complete pointer and keyboard behaviour beneath it.
 - Leaving the footer, reversing the footer scroll, hiding the document, changing pointer mode, or tearing down the page immediately restores the normal cursor and scroll-bound bike and removes all tracking state.
 - Touch never emulates cursor tracking; the scroll-bound bike remains the only bike guide on coarse-pointer devices.
 - The persistent contact component settles into a wider labelled panel over the footer.
