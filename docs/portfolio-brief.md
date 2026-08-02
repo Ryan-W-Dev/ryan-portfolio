@@ -195,10 +195,10 @@ The page uses semantic Astro components and native vertical scrolling.
 - Only the clipped eye-region artwork animates; the face and artwork never scale or jump for the blink.
 - Blinks use irregular timing with an occasional double blink.
 - Blinking pauses while the footer is offscreen, the tab is hidden, or reduced motion is requested.
-- A comic UFO enters from the right behind the rider's head, aligns over the left-rail dirt bike, projects a short beam, and removes the bike smoothly. Layering keeps the UFO and beam away from the visible face and eyes.
-- With a fine pointer, the UFO then chases the live footer cursor through one smoothed animation-frame loop. On arrival, a short beam replaces the normal footer cursor with the same small bike artwork. The replacement remains decorative and never captures input.
+- With a fine pointer, the same small bike artwork directly replaces the normal cursor at the established footer activation point and follows the live footer pointer through one animation-frame loop. It remains decorative and never captures input.
+- The cursor bike is layered above the rider portrait, helmet, face, eyes, and blinking-eye overlays, while the contact navigation remains above it and fully interactive.
 - Leaving the footer, reversing the footer scroll, hiding the document, changing pointer mode, or tearing down the page immediately restores the normal cursor and scroll-bound bike and removes all tracking state.
-- Touch uses the entrance, beam, abduction, and a short decorative settle only; it never emulates cursor tracking.
+- Touch never emulates cursor tracking; the scroll-bound bike remains the only bike guide on coarse-pointer devices.
 - The persistent contact component settles into a wider labelled panel over the footer.
 - Do not add contact marketing copy, a résumé link, source-code link, location, or availability.
 
@@ -222,7 +222,7 @@ The transformation is controlled by scroll progress and reverses cleanly. It mus
 - It leaves before the visor forms, remains hidden throughout the complete visor pass-through, and restores on the left rail only after the About scene resolves. Reverse scrolling restores this order precisely.
 - It uses safe page edges without covering important copy, card text, card numbers, contact controls, or the helmet focal point.
 - Wheel rotation, suspension displacement, and the bike’s route are derived only from scroll progress.
-- It does not use idle timers, autoplay, or input capture. Pointer tracking is permitted only for the footer UFO chase and cursor-bike replacement described above.
+- It does not use idle timers, autoplay, or input capture. Pointer tracking is permitted only for the footer cursor-bike replacement described above.
 - It is decorative, `aria-hidden`, and `pointer-events: none`.
 - With reduced motion it rests at one stable landmark without travel or wheel animation.
 
@@ -251,7 +251,7 @@ Core stack:
 
 Do not add React, a component library, smooth-scroll dependency, WebGL renderer, or other dependency without a separately approved technical need.
 
-Keep components focused on actual experience roles: freefall, arrival, temporary copy transition, card track, visor transition, rock face, persistent contact, footer portrait and UFO motion, and dirt-bike guide.
+Keep components focused on actual experience roles: freefall, arrival, temporary copy transition, card track, visor transition, rock face, persistent contact, footer portrait and cursor-bike motion, and dirt-bike guide.
 
 All timelines, ScrollTriggers, observers, timers, media-query listeners, resize listeners, and hot-reload hooks must be scoped and fully cleaned up.
 
@@ -263,7 +263,7 @@ All timelines, ScrollTriggers, observers, timers, media-query listeners, resize 
 - Use optimized WebP raster derivatives with explicit dimensions.
 - Preserve stable layout and prevent horizontal page overflow.
 - Pause time-based decorative motion when offscreen or hidden.
-- Use no more than one animation-frame loop for the footer chase, feed it the latest pointer target continuously, and cancel it outside the footer and during teardown.
+- Use no more than one animation-frame loop for the footer cursor bike, feed it the latest pointer target continuously, and cancel it outside the footer and during teardown.
 - Do not autoplay audio or add flashing effects.
 - Maintain accessible names and visible focus indicators for links.
 - Decorative motion and images remain hidden from assistive technology.
@@ -285,11 +285,11 @@ Before approval:
 - Verify the card travel, final settle, visor pass-through, and reverse restoration.
 - Verify the persistent contact transformation and keyboard focus.
 - Verify the footer blink pause and cleanup rules.
-- Verify the dirt bike route landmarks, footer abduction, beam, fine-pointer chase, cursor-bike replacement, touch fallback, and exact reverse restoration.
+- Verify the dirt bike route landmarks, direct fine-pointer cursor-bike replacement, touch behavior, above-rider layering, and exact reverse restoration.
 - Verify the face and open/closed-eye alignment in both responsive portrait sources.
 - Run each hero cloud loop for at least 30 seconds at desktop and mobile widths and verify no visible seam, jump, gap, reversal, or drift.
 - Check for layout jumps, horizontal overflow, clipped text, uncovered viewport edges, broken images, and browser console errors.
-- Capture fresh desktop and mobile evidence for the freefall, expansion midpoint, hero, cloud loop, arrow states, temporary-copy entry and fade, bike landmarks, climbing scene, UFO stack and chase, reverse restoration, and open/closed eyes.
+- Capture fresh desktop and mobile evidence for the freefall, expansion midpoint, hero, cloud loop, arrow states, temporary-copy entry and fade, bike landmarks, climbing scene, footer cursor-bike layering, reverse restoration, and open/closed eyes.
 - Do not stage or commit changes without explicit approval.
 
 ## 14. Success Test

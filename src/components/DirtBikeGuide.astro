@@ -188,12 +188,14 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			const rotation = interpolate(from.rotation, to.rotation, segmentProgress);
 			const suspensionOffset = Math.sin(progress * Math.PI * 18) * 2.5;
 
-			const abducted = guide.hasAttribute('data-abducted');
+			const footerCursorActive = guide.hasAttribute(
+				'data-footer-cursor-active',
+			);
 			gsap.set(guide, {
 				x,
 				y,
 				rotation,
-				opacity: abducted ? 0 : visibilityAt(progress),
+				opacity: footerCursorActive ? 0 : visibilityAt(progress),
 				force3D: true,
 			});
 			gsap.set(wheels, {
@@ -232,10 +234,10 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			render(trigger.progress);
 		};
 
-		const handleAbductionState = () => {
+		const handleFooterCursorState = () => {
 			if (trigger) render(trigger.progress);
 		};
-		const abductionObserver = new MutationObserver(handleAbductionState);
+		const footerCursorObserver = new MutationObserver(handleFooterCursorState);
 
 		const handleResize = () => {
 			window.cancelAnimationFrame(resizeFrame);
@@ -245,7 +247,7 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		const cleanup = () => {
 			window.removeEventListener('resize', handleResize);
 			reducedMotion.removeEventListener('change', build);
-			abductionObserver.disconnect();
+			footerCursorObserver.disconnect();
 			document.removeEventListener('astro:before-swap', cleanup);
 			window.cancelAnimationFrame(resizeFrame);
 			trigger?.kill();
@@ -255,9 +257,9 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		};
 
 		build();
-		abductionObserver.observe(guide, {
+		footerCursorObserver.observe(guide, {
 			attributes: true,
-			attributeFilter: ['data-abducted'],
+			attributeFilter: ['data-footer-cursor-active'],
 		});
 		window.addEventListener('resize', handleResize, { passive: true });
 		reducedMotion.addEventListener('change', build);
