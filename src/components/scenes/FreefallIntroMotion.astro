@@ -213,8 +213,14 @@
 											maxOpacity: 0.34,
 										};
 
+				const transformOrigin =
+					window
+						.getComputedStyle(target)
+						.getPropertyValue('--fall-cloud-transform-origin')
+						.trim() || '50% 50%';
+
 				gsap.set(target, {
-					transformOrigin: '50% 50%',
+					transformOrigin,
 					willChange: 'transform, opacity',
 				});
 				return {

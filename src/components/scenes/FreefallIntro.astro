@@ -202,6 +202,7 @@ const terrainPasses = [
 	}
 
 	.fall-cloud-pass {
+		--fall-cloud-transform-origin: 50% 50%;
 		position: absolute;
 		inline-size: 34vmax;
 		block-size: 15vmax;
@@ -322,8 +323,35 @@ const terrainPasses = [
 		}
 
 		.fall-cloud-pass {
-			inline-size: 48vmax;
-			block-size: 22vmax;
+			inline-size: min(76vw, 20rem);
+			block-size: min(33.44vw, 8.8rem);
+		}
+
+		.fall-cloud-pass--one {
+			--fall-cloud-transform-origin: 98% 90%;
+			inset-block-start: 6svh;
+			inset-inline: auto 60%;
+		}
+
+		.fall-cloud-pass--two {
+			--fall-cloud-transform-origin: 4% 90%;
+			inset-block-start: 18svh;
+			inset-inline-start: 60%;
+			transform: none;
+		}
+
+		.fall-cloud-pass--three {
+			--fall-cloud-transform-origin: 98% 35%;
+			inset-block-start: 59svh;
+			inset-inline: auto 60%;
+			transform: none;
+		}
+
+		.fall-cloud-pass--four {
+			--fall-cloud-transform-origin: 4% 35%;
+			inset-block-start: 70svh;
+			inset-inline-start: 60%;
+			transform: none;
 		}
 	}
 </style>
