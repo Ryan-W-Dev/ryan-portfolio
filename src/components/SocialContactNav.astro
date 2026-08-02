@@ -112,12 +112,22 @@ const contacts: Contact[] = [
 			const heroX = Math.max(12, window.innerWidth - compactWidth - 24);
 			const headerX = Math.max(0, (window.innerWidth - compactWidth) / 2);
 			const heroY = Math.max(0, window.innerHeight - nav.offsetHeight - 42);
+			const navBlockStart =
+				Number.parseFloat(window.getComputedStyle(nav).insetBlockStart) || 0;
+			const heroNavClearance = Math.max(
+				0,
+				window.innerHeight - (navBlockStart + heroY),
+			);
 			const footerY = Math.max(
 				0,
 				window.innerHeight - (window.innerWidth < 640 ? 164 : 84),
 			);
 			const footerWidth = Math.min(window.innerWidth - 24, 820);
 			const footerX = Math.max(0, (window.innerWidth - footerWidth) / 2);
+			hero.style.setProperty(
+				'--hero-contact-nav-clearance',
+				`${heroNavClearance}px`,
+			);
 
 			context = gsap.context(() => {
 				gsap.set(nav, { x: heroX, y: heroY, scale: 1, width: 'auto' });
@@ -192,6 +202,7 @@ const contacts: Contact[] = [
 			document.removeEventListener('astro:before-swap', cleanup);
 			window.cancelAnimationFrame(resizeFrame);
 			context?.revert();
+			hero.style.removeProperty('--hero-contact-nav-clearance');
 			if (socialWindow.__socialFlightCleanup === cleanup) {
 				delete socialWindow.__socialFlightCleanup;
 			}
