@@ -31,8 +31,9 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		<p data-arrival-subtitle>Web Developer</p>
 	</header>
 
-	<span class="scroll-indicator" data-scroll-indicator aria-hidden="true"
-	></span>
+	<span class="scroll-indicator" data-scroll-indicator aria-hidden="true">
+		<span class="scroll-indicator-motion"></span>
+	</span>
 </section>
 
 <script>
@@ -203,18 +204,24 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		inset-block-end: clamp(1rem, 3vh, 2rem);
 		inline-size: 0.45rem;
 		block-size: clamp(2.8rem, 7vh, 4.5rem);
+		will-change: transform, opacity;
+	}
+
+	.scroll-indicator-motion {
+		position: absolute;
+		inset: 0;
 		background: var(--cream-light);
 		box-shadow: 0.3rem 0 0 var(--red);
-		animation: arrow-breathe 2.6s ease-in-out infinite;
+		animation: arrow-breathe 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 		animation-play-state: paused;
 		will-change: transform, opacity;
 	}
 
-	.arrival-scene[data-hero-active] .scroll-indicator {
+	.arrival-scene[data-hero-active] .scroll-indicator-motion {
 		animation-play-state: running;
 	}
 
-	.scroll-indicator::after {
+	.scroll-indicator-motion::after {
 		position: absolute;
 		inset-block-end: -0.2rem;
 		inset-inline-start: 50%;
@@ -228,18 +235,13 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 
 	@keyframes arrow-breathe {
 		0%,
-		16%,
 		100% {
-			opacity: 1;
+			opacity: 0.64;
 			transform: translate3d(0, 0, 0);
 		}
 		50% {
-			opacity: 0.35;
+			opacity: 1;
 			transform: translate3d(0, 8px, 0);
-		}
-		76% {
-			opacity: 0.82;
-			transform: translate3d(0, 2px, 0);
 		}
 	}
 
@@ -273,12 +275,15 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 
 	@media (prefers-reduced-motion: reduce) {
 		.arrival-content,
-		.scroll-indicator {
+		.scroll-indicator,
+		.scroll-indicator-motion {
 			will-change: auto;
 		}
 
-		.scroll-indicator {
+		.scroll-indicator-motion {
 			animation: none;
+			opacity: 1;
+			transform: none;
 		}
 	}
 </style>
