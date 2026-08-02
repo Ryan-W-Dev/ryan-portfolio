@@ -3,83 +3,128 @@
 	data-rock-scene
 	aria-labelledby="about-statement"
 >
-	<div class="rock-face-geometry" aria-hidden="true">
-		<span class="route-line"></span>
-		<span class="route-anchor route-anchor-start"></span>
-		<span class="route-anchor route-anchor-middle"></span>
-		<span class="route-anchor route-anchor-end"></span>
-	</div>
+	<img
+		class="rock-artwork"
+		src="/assets/rock/rockface-climbing.webp"
+		alt=""
+		width="1920"
+		height="1080"
+		loading="lazy"
+		decoding="async"
+		draggable="false"
+	/>
+	<div class="rock-grade" aria-hidden="true"></div>
+	<div class="rock-print-frame" aria-hidden="true"></div>
 
-	<p id="about-statement" data-about-statement>
-		I like my sports extreme and my websites anything but ordinary.
+	<p id="about-statement" data-about-statement data-about-panel>
+		<span data-about-copy
+			>I like my sports extreme and my websites anything but ordinary.</span
+		>
 	</p>
 </section>
 
 <style>
 	.rock-face-scene {
-		grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
-		gap: clamp(2rem, 8vw, 8rem);
-		background: var(--color-placeholder);
+		isolation: isolate;
+		place-items: center end;
+		overflow: hidden;
+		padding: clamp(1.2rem, 5vw, 5rem);
+		background: var(--cobalt);
+		color: var(--cream-light);
 	}
 
-	.rock-face-geometry {
-		position: relative;
-		inline-size: min(100%, 38rem);
-		block-size: min(65svh, 42rem);
-		border: 1px solid var(--color-ink);
-	}
-
-	.route-line {
+	.rock-artwork,
+	.rock-grade,
+	.rock-print-frame {
 		position: absolute;
-		inset-block: 12%;
-		inset-inline-start: 48%;
-		inline-size: 1px;
-		background: var(--color-ink);
-		transform: rotate(12deg);
-		transform-origin: center;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
 	}
 
-	.route-anchor {
-		position: absolute;
-		inline-size: 1rem;
-		aspect-ratio: 1;
-		border: 1px solid var(--color-ink);
-		border-radius: 50%;
-		background: var(--color-surface);
+	.rock-artwork {
+		z-index: -3;
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: center;
+		user-select: none;
 	}
 
-	.route-anchor-start {
-		inset-block-end: 10%;
-		inset-inline-start: 38%;
+	.rock-grade {
+		z-index: -2;
+		background:
+			linear-gradient(
+				90deg,
+				transparent 0 44%,
+				rgb(6 28 56 / 8%) 58%,
+				rgb(6 28 56 / 50%) 100%
+			),
+			linear-gradient(180deg, transparent 50%, rgb(6 28 56 / 24%) 100%);
 	}
 
-	.route-anchor-middle {
-		inset-block-start: 47%;
-		inset-inline-start: 52%;
-	}
-
-	.route-anchor-end {
-		inset-block-start: 9%;
-		inset-inline-start: 58%;
+	.rock-print-frame {
+		z-index: -1;
+		inset: clamp(0.55rem, 1.25vw, 1.25rem);
+		inline-size: auto;
+		block-size: auto;
+		border: clamp(0.22rem, 0.45vw, 0.45rem) solid var(--ink);
+		box-shadow: inset 0 0 0 2px rgb(244 228 190 / 38%);
+		clip-path: polygon(
+			1.2rem 0,
+			100% 0,
+			100% calc(100% - 1.2rem),
+			calc(100% - 1.2rem) 100%,
+			0 100%,
+			0 1.2rem
+		);
 	}
 
 	p {
 		position: relative;
-		max-inline-size: 20ch;
-		font-size: clamp(2.25rem, 6vw, 5.5rem);
-		font-weight: 700;
-		line-height: 0.98;
-		letter-spacing: -0.05em;
+		z-index: 2;
+		max-inline-size: 14ch;
+		margin-inline-end: clamp(0rem, 3vw, 3rem);
+		padding: clamp(1.1rem, 2.8vw, 2.3rem);
+		border: clamp(0.32rem, 0.6vw, 0.6rem) solid var(--ink);
+		background: var(--cream-light);
+		box-shadow: clamp(0.6rem, 1vw, 1rem) clamp(0.6rem, 1vw, 1rem) 0 var(--red);
+		color: var(--ink);
+		font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+		font-size: clamp(2.7rem, 5.5vw, 5.9rem);
+		font-weight: 900;
+		line-height: 0.9;
+		letter-spacing: -0.025em;
+		text-transform: uppercase;
+		transform: rotate(-1.2deg);
+	}
+
+	p span {
+		display: block;
 	}
 
 	@media (max-width: 48rem) {
 		.rock-face-scene {
-			grid-template-columns: 1fr;
-			align-content: center;
+			place-items: end center;
+			padding: 1rem;
 		}
 
-		.rock-face-geometry {
-			block-size: 38svh;
+		.rock-artwork {
+			object-position: 38% center;
+		}
+
+		.rock-grade {
+			background: linear-gradient(
+				180deg,
+				transparent 34%,
+				rgb(6 28 56 / 12%) 50%,
+				rgb(6 28 56 / 86%) 100%
+			);
+		}
+
+		p {
+			max-inline-size: min(12ch, calc(100vw - 3rem));
+			margin: 0 0 clamp(1.2rem, 7vh, 4rem);
+			font-size: clamp(2.6rem, 11.2vw, 4.5rem);
 		}
 	}
 </style>

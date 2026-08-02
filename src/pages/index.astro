@@ -3,19 +3,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import AirtimeScene from '../components/scenes/AirtimeScene.astro';
 import ArrivalScene from '../components/scenes/ArrivalScene.astro';
 import ContactFooterScene from '../components/scenes/ContactFooterScene.astro';
+import DirtBikeGuide from '../components/DirtBikeGuide.astro';
 import FreefallIntro from '../components/scenes/FreefallIntro.astro';
+import SocialContactNav from '../components/SocialContactNav.astro';
 import VisorTransitionScene from '../components/scenes/VisorTransitionScene.astro';
 ---
 
 <BaseLayout
 	title="Ryan Wynn — Web Developer"
-	description="Ryan Wynn — Web Developer"
+	description="The extreme-sports portfolio of web developer Ryan Wynn."
 >
-	<main>
+	<main id="main-content">
 		<FreefallIntro />
 		<ArrivalScene />
+		<SocialContactNav />
 		<AirtimeScene />
 		<VisorTransitionScene />
 	</main>
 	<ContactFooterScene />
+	<DirtBikeGuide />
 </BaseLayout>

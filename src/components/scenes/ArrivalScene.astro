@@ -1,12 +1,33 @@
+---
+import ComicCloudTrack from '../ComicCloudTrack.astro';
+---
+
 <section
 	class="scene arrival-scene"
 	data-arrival-scene
 	aria-labelledby="arrival-title"
 >
-	<div class="arrival-circle" data-arrival-circle aria-hidden="true"></div>
+	<img
+		class="hero-landscape"
+		data-hero-landscape
+		src="/assets/hero/hero-desert.webp"
+		alt=""
+		width="1920"
+		height="1080"
+		fetchpriority="high"
+		decoding="async"
+		draggable="false"
+	/>
+	<div class="hero-color-grade" data-hero-grade aria-hidden="true"></div>
 
-	<header class="arrival-content">
-		<h1 id="arrival-title" data-arrival-title>RYAN WYNN</h1>
+	<div class="hero-clouds" data-hero-clouds aria-hidden="true">
+		<ComicCloudTrack depth="far" />
+		<ComicCloudTrack depth="mid" />
+		<ComicCloudTrack depth="near" />
+	</div>
+
+	<header class="arrival-content" data-arrival-content>
+		<h1 id="arrival-title" class="comic-title" data-arrival-title>RYAN WYNN</h1>
 		<p data-arrival-subtitle>Web Developer</p>
 	</header>
 
@@ -14,51 +35,250 @@
 	></span>
 </section>
 
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	const heroCloudWindow = window as Window & {
+		__heroCloudCleanup?: () => void;
+	};
+	heroCloudWindow.__heroCloudCleanup?.();
+
+	const initialiseHeroClouds = () => {
+		const scene = document.querySelector<HTMLElement>('[data-arrival-scene]');
+		const clouds = scene?.querySelector<HTMLElement>('[data-hero-clouds]');
+		const landscape = scene?.querySelector<HTMLElement>(
+			'[data-hero-landscape]',
+		);
+		const grade = scene?.querySelector<HTMLElement>('[data-hero-grade]');
+		const content = scene?.querySelector<HTMLElement>('[data-arrival-content]');
+		const indicator = scene?.querySelector<HTMLElement>(
+			'[data-scroll-indicator]',
+		);
+		if (!scene || !clouds || !landscape || !grade || !content || !indicator)
+			return;
+
+		let visible = false;
+		let context: gsap.Context | undefined;
+		const update = () => {
+			const active = visible && !document.hidden;
+			clouds.toggleAttribute('data-clouds-active', active);
+			scene.toggleAttribute('data-hero-active', active);
+		};
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				visible = entry.isIntersecting;
+				update();
+			},
+			{ threshold: 0.06 },
+		);
+		const handleVisibility = () => update();
+
+		context = gsap.context(() => {
+			const timeline = gsap.timeline({
+				defaults: { ease: 'none' },
+				scrollTrigger: {
+					id: 'hero-to-transition-copy',
+					trigger: scene,
+					start: 'top top',
+					end: 'bottom top',
+					scrub: true,
+					invalidateOnRefresh: true,
+				},
+			});
+
+			timeline
+				.to(grade, { opacity: 0.78 }, 0)
+				.to(content, { yPercent: -13, autoAlpha: 0 }, 0.48)
+				.to(indicator, { yPercent: -28, autoAlpha: 0 }, 0.28);
+		}, scene);
+
+		const cleanup = () => {
+			observer.disconnect();
+			document.removeEventListener('visibilitychange', handleVisibility);
+			document.removeEventListener('astro:before-swap', cleanup);
+			context?.revert();
+			if (heroCloudWindow.__heroCloudCleanup === cleanup)
+				delete heroCloudWindow.__heroCloudCleanup;
+		};
+
+		observer.observe(scene);
+		document.addEventListener('visibilitychange', handleVisibility);
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		heroCloudWindow.__heroCloudCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseHeroClouds();
+</script>
+
 <style>
 	.arrival-scene {
-		background: var(--color-surface);
+		isolation: isolate;
+		background: var(--orange);
 	}
 
-	.arrival-circle {
+	.hero-landscape,
+	.hero-color-grade,
+	.hero-clouds {
 		position: absolute;
-		z-index: 1100;
-		inline-size: min(68vw, 42rem);
-		aspect-ratio: 1;
-		border: 1px solid var(--color-line);
-		border-radius: 50%;
-		background: var(--color-placeholder);
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+	}
+
+	.hero-landscape {
+		z-index: -3;
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: center;
+		user-select: none;
+	}
+
+	.hero-color-grade {
+		z-index: -2;
+		background:
+			linear-gradient(180deg, rgb(6 28 56 / 5%) 28%, rgb(6 28 56 / 48%) 100%),
+			radial-gradient(circle at 50% 53%, rgb(226 40 34 / 12%), transparent 46%);
+	}
+
+	.hero-clouds {
+		z-index: -1;
+		overflow: hidden;
+		filter: drop-shadow(0.4rem 0.5rem 0 rgb(6 28 56 / 58%));
+		pointer-events: none;
 	}
 
 	.arrival-content {
 		position: relative;
-		z-index: 1200;
+		z-index: 2;
 		display: grid;
 		place-items: center;
+		color: var(--cream-light);
 		text-align: center;
+		will-change: transform, opacity;
+	}
+
+	.arrival-content h1,
+	.arrival-content p,
+	.scroll-indicator {
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	.arrival-scene[data-intro-complete] .arrival-content h1,
+	.arrival-scene[data-intro-complete] .arrival-content p,
+	.arrival-scene[data-intro-complete] .scroll-indicator {
+		visibility: visible;
+		opacity: 1;
 	}
 
 	h1 {
-		position: relative;
-		z-index: 1;
-		font-size: clamp(3.5rem, 12vw, 10rem);
-		font-weight: 800;
-		line-height: 0.84;
-		letter-spacing: -0.075em;
+		font-size: clamp(4.8rem, 17vw, 15rem);
+		line-height: 0.73;
+		letter-spacing: -0.045em;
+		-webkit-text-stroke: clamp(0.14rem, 0.36vw, 0.4rem) var(--ink);
+		text-shadow:
+			clamp(0.3rem, 0.85vw, 0.85rem) clamp(0.3rem, 0.85vw, 0.85rem) 0 var(--red),
+			clamp(0.48rem, 1.15vw, 1.1rem) clamp(0.48rem, 1.15vw, 1.1rem) 0 var(--ink);
 	}
 
 	p {
-		position: absolute;
-		inset-block-start: calc(100% + 1.25rem);
-		font-size: clamp(1rem, 2vw, 1.5rem);
-		white-space: nowrap;
+		margin-block-start: clamp(1.3rem, 3vw, 2.5rem);
+		padding: 0.45rem 0.9rem;
+		border-block: 0.2rem solid var(--ink);
+		background: var(--yellow);
+		color: var(--ink);
+		font-size: clamp(1rem, 2vw, 1.55rem);
+		font-weight: 900;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
 	}
 
 	.scroll-indicator {
 		position: absolute;
-		z-index: 1200;
-		inset-block-end: var(--scene-gutter);
-		inline-size: 1px;
-		block-size: clamp(2.5rem, 7vh, 4rem);
-		background: var(--color-ink);
+		z-index: 2;
+		inset-block-end: clamp(1rem, 3vh, 2rem);
+		inline-size: 0.45rem;
+		block-size: clamp(2.8rem, 7vh, 4.5rem);
+		background: var(--cream-light);
+		box-shadow: 0.3rem 0 0 var(--red);
+		animation: arrow-breathe 2.6s ease-in-out infinite;
+		animation-play-state: paused;
+		will-change: transform, opacity;
+	}
+
+	.arrival-scene[data-hero-active] .scroll-indicator {
+		animation-play-state: running;
+	}
+
+	.scroll-indicator::after {
+		position: absolute;
+		inset-block-end: -0.2rem;
+		inset-inline-start: 50%;
+		inline-size: 1.4rem;
+		aspect-ratio: 1;
+		border-inline-end: 0.4rem solid var(--cream-light);
+		border-block-end: 0.4rem solid var(--cream-light);
+		content: '';
+		transform: translateX(-50%) rotate(45deg);
+	}
+
+	@keyframes arrow-breathe {
+		0%,
+		16%,
+		100% {
+			opacity: 1;
+			transform: translate3d(0, 0, 0);
+		}
+		50% {
+			opacity: 0.35;
+			transform: translate3d(0, 8px, 0);
+		}
+		76% {
+			opacity: 0.82;
+			transform: translate3d(0, 2px, 0);
+		}
+	}
+
+	@media (max-width: 40rem) {
+		.hero-landscape {
+			object-position: 52% center;
+		}
+
+		h1 {
+			max-inline-size: 3.5ch;
+			font-size: clamp(5.5rem, 28vw, 8.1rem);
+			line-height: 0.76;
+			text-wrap: balance;
+		}
+
+		p {
+			font-size: 0.9rem;
+			letter-spacing: 0.13em;
+		}
+	}
+
+	@media (max-height: 34rem) and (orientation: landscape) {
+		h1 {
+			font-size: clamp(3.8rem, 16vh, 7.5rem);
+		}
+
+		p {
+			margin-block-start: 0.7rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.arrival-content,
+		.scroll-indicator {
+			will-change: auto;
+		}
+
+		.scroll-indicator {
+			animation: none;
+		}
 	}
 </style>

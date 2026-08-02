@@ -1,0 +1,92 @@
+---
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<svg
+	class={className}
+	data-bike-artwork
+	viewBox="0 0 176 96"
+	role="presentation"
+	aria-hidden="true"
+>
+	<g class="bike-assembly" data-bike-assembly>
+		<g class="bike-wheel bike-wheel--rear" data-bike-wheel>
+			<circle cx="38" cy="67" r="24"></circle>
+			<path d="M38 46v42M17 67h42M23 52l30 30M23 82l30-30"></path>
+		</g>
+		<g class="bike-wheel bike-wheel--front" data-bike-wheel>
+			<circle cx="139" cy="67" r="24"></circle>
+			<path d="M139 46v42M118 67h42M124 52l30 30M124 82l30-30"></path>
+		</g>
+		<g class="bike-suspension" data-bike-suspension>
+			<path
+				class="bike-frame"
+				d="m38 66 35-31 27 32H38Zm35-31 28 1 38 31M73 35l-8-13m-8 0h22"></path>
+			<path class="bike-fork" d="m105 25 34 42m-41-42h20"></path>
+			<path class="bike-seat" d="M58 23h34l7 8H68Z"></path>
+			<path class="bike-tank" d="m76 33 26 2-12 20-20-7Z"></path>
+			<circle class="bike-engine" cx="73" cy="55" r="9"></circle>
+			<path class="bike-accent" d="m42 53 22-21 28 2"></path>
+		</g>
+	</g>
+</svg>
+
+<style>
+	svg {
+		display: block;
+		overflow: visible;
+	}
+
+	.bike-wheel circle {
+		fill: var(--ink);
+		stroke: var(--cream-light);
+		stroke-width: 5;
+	}
+
+	.bike-wheel path {
+		fill: none;
+		stroke: var(--yellow);
+		stroke-width: 2;
+	}
+
+	.bike-frame,
+	.bike-fork,
+	.bike-seat,
+	.bike-accent {
+		fill: none;
+		stroke-linecap: square;
+		stroke-linejoin: bevel;
+	}
+
+	.bike-frame,
+	.bike-fork {
+		stroke: var(--red);
+		stroke-width: 7;
+	}
+
+	.bike-seat {
+		stroke: var(--ink);
+		stroke-width: 8;
+	}
+
+	.bike-tank {
+		fill: var(--orange);
+		stroke: var(--ink);
+		stroke-width: 3;
+	}
+
+	.bike-engine {
+		fill: var(--cream-light);
+		stroke: var(--ink);
+		stroke-width: 4;
+	}
+
+	.bike-accent {
+		stroke: var(--yellow);
+		stroke-width: 4;
+	}
+</style>

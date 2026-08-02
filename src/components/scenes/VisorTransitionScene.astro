@@ -64,9 +64,13 @@ import RockFaceScene from './RockFaceScene.astro';
 		block: 0.54,
 	} as const;
 	const CARD_COPY_EXIT_DURATION_RATIO = 0.58;
+	const ABOUT_PANEL_TIMING = {
+		delay: 0.5,
+		duration: 0.18,
+	} as const;
 	const ABOUT_COPY_TIMING = {
-		delay: 0.68,
-		duration: 0.32,
+		delay: 0.42,
+		duration: 0.34,
 	} as const;
 
 	const FINAL_CARD_SETTLED_LABEL = 'final-card-settled';
@@ -108,6 +112,8 @@ import RockFaceScene from './RockFaceScene.astro';
 		const aboutStatement = rockScene?.querySelector<HTMLElement>(
 			'[data-about-statement]',
 		);
+		const aboutCopy =
+			rockScene?.querySelector<HTMLElement>('[data-about-copy]');
 		const goggleTransition = stage?.querySelector<HTMLElement>(
 			'[data-goggle-transition]',
 		);
@@ -133,6 +139,7 @@ import RockFaceScene from './RockFaceScene.astro';
 			!revealSurface ||
 			!rockScene ||
 			!aboutStatement ||
+			!aboutCopy ||
 			!goggleTransition ||
 			!goggleFrame ||
 			!primaryReflection ||
@@ -157,15 +164,21 @@ import RockFaceScene from './RockFaceScene.astro';
 		const responsiveGoggleGeometry = () => {
 			const isPortrait = stage.clientHeight > stage.clientWidth;
 			const lockFrameInline = isPortrait
-				? Math.min(stage.clientWidth * 1.55, stage.clientHeight * 0.64)
+				? stage.clientWidth * 1.85
 				: Math.min(stage.clientWidth * 0.86, stage.clientHeight * 1.38);
-			const lockFrameBlock = lockFrameInline / (isPortrait ? 2.35 : 2.4);
+			const lockFrameBlock = isPortrait
+				? Math.min(stage.clientHeight * 0.34, lockFrameInline / 2.75)
+				: lockFrameInline / 2.4;
 			const lockWindowInline = lockFrameInline * GOGGLE_OPENING_RATIOS.inline;
 			const lockWindowBlock = lockFrameBlock * GOGGLE_OPENING_RATIOS.block;
-			const passWindowBlock = stage.clientHeight * 1.6;
-			const passWindowInline = passWindowBlock * 3.6;
-			const resolveWindowBlock = stage.clientHeight * 1.7;
-			const resolveWindowInline = resolveWindowBlock * 3.6;
+			const passWindowBlock = stage.clientHeight * (isPortrait ? 1.2 : 1.6);
+			const passWindowInline = isPortrait
+				? Math.max(stage.clientWidth * 4.4, stage.clientHeight * 1.9)
+				: passWindowBlock * 3.6;
+			const resolveWindowBlock = stage.clientHeight * (isPortrait ? 1.32 : 1.7);
+			const resolveWindowInline = isPortrait
+				? Math.max(stage.clientWidth * 4.8, stage.clientHeight * 2.05)
+				: resolveWindowBlock * 3.6;
 
 			return {
 				lockFrameInline,
@@ -222,7 +235,8 @@ import RockFaceScene from './RockFaceScene.astro';
 				travelDistance + settleDistance + transitionDistance;
 			const settleState = { progress: 0 };
 			const goggleGeometry = responsiveGoggleGeometry();
-			const aboutRevealStart = `${VISOR_PASS_THROUGH_LABEL}+=${visorPassThroughDistance * ABOUT_COPY_TIMING.delay}`;
+			const aboutPanelRevealStart = `${VISOR_PASS_THROUGH_LABEL}+=${visorPassThroughDistance * ABOUT_PANEL_TIMING.delay}`;
+			const aboutCopyRevealStart = `${ROCK_FACE_RESOLVE_LABEL}+=${rockFaceResolveDistance * ABOUT_COPY_TIMING.delay}`;
 
 			context = gsap.context(() => {
 				gsap.set(track, { x: 0 });
@@ -246,12 +260,16 @@ import RockFaceScene from './RockFaceScene.astro';
 					height: stage.clientHeight,
 				});
 				gsap.set(visorWindow, {
-					width: 1,
+					width: 4,
 					height: 1,
 				});
 				gsap.set(aboutStatement, {
 					autoAlpha: 0,
-					yPercent: 8,
+					yPercent: 4,
+				});
+				gsap.set(aboutCopy, {
+					autoAlpha: 0,
+					yPercent: 7,
 				});
 				gsap.set(goggleFrame, {
 					autoAlpha: 0,
@@ -277,7 +295,13 @@ import RockFaceScene from './RockFaceScene.astro';
 							end: `+=${Math.max(totalScrollDistance, 1)}`,
 							scrub: true,
 							pin: stage,
+							refreshPriority: 10,
 							invalidateOnRefresh: true,
+							onToggle: (self) => {
+								gsap.set([track, cardViewport, goggleFrame, visorWindow], {
+									willChange: self.isActive ? 'transform, opacity' : 'auto',
+								});
+							},
 						},
 					})
 					.to(track, {
@@ -302,7 +326,7 @@ import RockFaceScene from './RockFaceScene.astro';
 					.to(
 						cardViewport,
 						{
-							autoAlpha: 0.36,
+							autoAlpha: 0,
 							rotation: -1.2,
 							scale: 0.92,
 							duration: helmetFormDistance,
@@ -341,7 +365,7 @@ import RockFaceScene from './RockFaceScene.astro';
 					.to(
 						cardViewport,
 						{
-							autoAlpha: 0.12,
+							autoAlpha: 0,
 							rotation: 1.4,
 							scale: 0.84,
 							duration: visorLockDistance,
@@ -428,9 +452,9 @@ import RockFaceScene from './RockFaceScene.astro';
 						{
 							autoAlpha: 1,
 							yPercent: 0,
-							duration: visorPassThroughDistance * ABOUT_COPY_TIMING.duration,
+							duration: visorPassThroughDistance * ABOUT_PANEL_TIMING.duration,
 						},
-						aboutRevealStart,
+						aboutPanelRevealStart,
 					)
 					.addLabel(ROCK_FACE_RESOLVE_LABEL)
 					.to(
@@ -460,6 +484,15 @@ import RockFaceScene from './RockFaceScene.astro';
 							duration: rockFaceResolveDistance * 0.35,
 						},
 						ROCK_FACE_RESOLVE_LABEL,
+					)
+					.to(
+						aboutCopy,
+						{
+							autoAlpha: 1,
+							yPercent: 0,
+							duration: rockFaceResolveDistance * ABOUT_COPY_TIMING.duration,
+						},
+						aboutCopyRevealStart,
 					);
 			}, sequence);
 		};
@@ -528,7 +561,7 @@ import RockFaceScene from './RockFaceScene.astro';
 <style>
 	.visor-sequence {
 		position: relative;
-		background: var(--color-surface);
+		background: var(--cream);
 	}
 
 	.visor-stage {
@@ -538,7 +571,7 @@ import RockFaceScene from './RockFaceScene.astro';
 		block-size: 100vh;
 		block-size: 100svh;
 		overflow: clip;
-		background: var(--color-surface);
+		background: var(--cream);
 	}
 
 	.visor-stage :global([data-card-scene]) {
@@ -555,12 +588,14 @@ import RockFaceScene from './RockFaceScene.astro';
 		z-index: 2;
 		inset-block-start: 50%;
 		inset-inline-start: 50%;
-		inline-size: 1px;
+		inline-size: 4px;
 		block-size: 1px;
 		overflow: hidden;
 		border-radius: 24% 24% 28% 28% / 38% 38% 46% 46%;
 		isolation: isolate;
-		background: var(--color-placeholder);
+		border: clamp(0.2rem, 0.45vw, 0.45rem) solid var(--ink);
+		background: var(--cobalt);
+		box-shadow: 0.6rem 0.7rem 0 var(--red);
 		translate: -50% -50%;
 	}
 
@@ -592,6 +627,9 @@ import RockFaceScene from './RockFaceScene.astro';
 		z-index: 3;
 		inset: 0;
 		pointer-events: none;
+		filter: drop-shadow(
+			clamp(0.4rem, 0.9vw, 0.9rem) clamp(0.4rem, 0.9vw, 0.9rem) 0 var(--red)
+		);
 	}
 
 	.goggle-frame {
@@ -601,23 +639,27 @@ import RockFaceScene from './RockFaceScene.astro';
 		display: block;
 		inline-size: 1px;
 		block-size: 1px;
+		max-inline-size: none;
 		overflow: visible;
 	}
 
 	.goggle-frame-body {
-		fill: #171715;
+		fill: var(--ink);
+		stroke: var(--cream-light);
+		stroke-width: 4;
+		paint-order: stroke fill;
 	}
 
 	.goggle-inner-edge {
 		fill: none;
-		stroke: #343431;
+		stroke: var(--orange);
 		stroke-width: 14;
 		vector-effect: non-scaling-stroke;
 	}
 
 	.goggle-reflection {
 		fill: none;
-		stroke: rgb(255 255 255 / 58%);
+		stroke: rgb(255 242 211 / 82%);
 		stroke-linecap: round;
 		stroke-width: 4;
 		stroke-dasharray: 52 48;
@@ -625,6 +667,7 @@ import RockFaceScene from './RockFaceScene.astro';
 	}
 
 	.goggle-reflection-secondary {
+		stroke: var(--yellow);
 		stroke-width: 2;
 	}
 </style>

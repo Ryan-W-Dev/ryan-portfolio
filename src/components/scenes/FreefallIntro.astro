@@ -1,119 +1,111 @@
 ---
 import FreefallIntroMotion from './FreefallIntroMotion.astro';
+
+const terrainPasses = [
+	{ family: 'terrain-far', phase: '0' },
+	{ family: 'terrain-far', phase: '0.5' },
+	{ family: 'terrain-mid', phase: '0.18' },
+	{ family: 'terrain-mid', phase: '0.68' },
+	{ family: 'terrain-near', phase: '0.34' },
+	{ family: 'terrain-near', phase: '0.84' },
+] as const;
 ---
 
 <div class="freefall-intro" data-freefall-intro aria-hidden="true">
 	<div class="freefall-world" data-freefall-world>
 		<div class="terrain-camera" data-terrain-camera>
+			{
+				terrainPasses.map((pass) => (
+					<img
+						class={`terrain-pass ${pass.family}`}
+						data-depth-family={pass.family}
+						data-initial-phase={pass.phase}
+						src="/assets/freefall/freefall-environment.webp"
+						alt=""
+						width="1920"
+						height="1080"
+						decoding="async"
+						draggable="false"
+					/>
+				))
+			}
+		</div>
+
+		<div class="fall-clouds" aria-hidden="true">
 			<svg
-				class="terrain-plane"
-				viewBox="0 0 1200 1200"
-				preserveAspectRatio="xMidYMid slice"
-				aria-hidden="true"
+				class="fall-cloud-pass fall-cloud-pass--one"
+				data-depth-family="cloud"
+				data-initial-phase="0.12"
+				viewBox="0 0 500 220"
 			>
-				<defs>
-					<g id="terrain-far-form">
-						<path
-							d="M0 92 214 26l205 122 222-96 236 112 323-78v406l-214-38-222 112-247-81-239 96L0 507Z"
-							fill="#b3bcb0"></path>
-						<path
-							d="m0 703 178-87 232 84 216-124 225 83 349-115v656H0Z"
-							fill="#d3d7ce"></path>
-						<path
-							d="m84 0 142 253 194 70 122 202-102 195-245 84L0 675V0Z"
-							fill="#bdc5ba"></path>
-						<path d="m1200 237-233 40-139 174 86 213 286 99Z" fill="#a7b2a5"
-						></path>
-					</g>
-
-					<g id="terrain-mid-form">
-						<path
-							d="M125 926 274 751l169-25 87-157 157-38 143-188 197-49"
-							fill="none"
-							stroke="#727e70"
-							stroke-width="7"></path>
-						<path
-							d="m163 275 134 79 153-34 103 97 155 19 122 102 182-12"
-							fill="none"
-							stroke="#dce0d7"
-							stroke-width="24"
-							stroke-linecap="round"></path>
-						<path
-							d="m146 982 181-78 107 51 178-103 194 62 222-118 140 33"
-							fill="none"
-							stroke="#9fa99d"
-							stroke-width="34"
-							stroke-linecap="round"></path>
-						<path
-							d="m227 149 132 168-48 146 123 92-69 178"
-							fill="none"
-							stroke="#818d7f"
-							stroke-width="10"></path>
-					</g>
-
-					<g id="terrain-near-form">
-						<path
-							d="m366 412 117-76 101 38 78-57 121 63-29 111-105 64-118-23-91 58-96-76Z"
-							fill="#909c8e"></path>
-						<path
-							d="m756 642 102-77 122 28 63 99-67 105-138 37-116-82Z"
-							fill="#b1baae"></path>
-						<path d="m157 683 114-54 104 75-8 128-131 66-105-88Z" fill="#9ca799"
-						></path>
-						<path
-							class="narrow-detail"
-							d="m886 152 96 53 26 93-88 58-112-22-22-102Z"
-							fill="#d5d9d0"></path>
-						<path
-							class="narrow-detail"
-							d="m127 225 72-78 115 26 39 93-92 72-108-16Z"
-							fill="#818e7f"></path>
-					</g>
-				</defs>
-
-				<rect width="1200" height="1200" fill="#ccd1c8"></rect>
-
-				<g data-depth-family="terrain-far">
-					<use href="#terrain-far-form"></use>
-				</g>
-				<g data-depth-family="terrain-far">
-					<use href="#terrain-far-form"></use>
-				</g>
-				<g data-depth-family="terrain-mid">
-					<use href="#terrain-mid-form"></use>
-				</g>
-				<g data-depth-family="terrain-mid">
-					<use href="#terrain-mid-form"></use>
-				</g>
-				<g data-depth-family="terrain-near">
-					<use href="#terrain-near-form"></use>
-				</g>
-				<g data-depth-family="terrain-near">
-					<use href="#terrain-near-form"></use>
-				</g>
+				<path
+					class="fall-cloud-body"
+					d="M18 155C59 116 108 118 139 137C164 77 230 55 278 100C319 66 386 78 408 132C445 128 476 145 491 174C391 206 127 210 18 155Z"
+				></path>
+				<path
+					class="fall-cloud-ink"
+					d="M48 164C135 190 315 192 451 160M119 137C141 151 166 157 192 156M274 116C306 137 345 143 378 139"
+				></path>
+			</svg>
+			<svg
+				class="fall-cloud-pass fall-cloud-pass--two"
+				data-depth-family="cloud"
+				data-initial-phase="0.37"
+				viewBox="0 0 500 220"
+			>
+				<path
+					class="fall-cloud-body"
+					d="M18 155C59 116 108 118 139 137C164 77 230 55 278 100C319 66 386 78 408 132C445 128 476 145 491 174C391 206 127 210 18 155Z"
+				></path>
+				<path
+					class="fall-cloud-ink"
+					d="M48 164C135 190 315 192 451 160M119 137C141 151 166 157 192 156M274 116C306 137 345 143 378 139"
+				></path>
+			</svg>
+			<svg
+				class="fall-cloud-pass fall-cloud-pass--three"
+				data-depth-family="cloud"
+				data-initial-phase="0.62"
+				viewBox="0 0 500 220"
+			>
+				<path
+					class="fall-cloud-body"
+					d="M18 155C59 116 108 118 139 137C164 77 230 55 278 100C319 66 386 78 408 132C445 128 476 145 491 174C391 206 127 210 18 155Z"
+				></path>
+				<path
+					class="fall-cloud-ink"
+					d="M48 164C135 190 315 192 451 160M119 137C141 151 166 157 192 156M274 116C306 137 345 143 378 139"
+				></path>
+			</svg>
+			<svg
+				class="fall-cloud-pass fall-cloud-pass--four"
+				data-depth-family="cloud"
+				data-initial-phase="0.87"
+				viewBox="0 0 500 220"
+			>
+				<path
+					class="fall-cloud-body"
+					d="M18 155C59 116 108 118 139 137C164 77 230 55 278 100C319 66 386 78 408 132C445 128 476 145 491 174C391 206 127 210 18 155Z"
+				></path>
+				<path
+					class="fall-cloud-ink"
+					d="M48 164C135 190 315 192 451 160M119 137C141 151 166 157 192 156M274 116C306 137 345 143 378 139"
+				></path>
 			</svg>
 		</div>
 
-		<div class="cloud-layer cloud-layer-far" data-depth-family="cloud-far">
-			<span></span>
-			<span></span>
-			<span></span>
+		<div
+			class="speed-burst"
+			data-depth-family="speed"
+			data-initial-phase="0.22"
+		>
+			<span></span><span></span><span></span><span></span><span></span><span
+			></span>
+			<span></span><span></span><span></span><span></span><span></span><span
+			></span>
 		</div>
-		<div class="cloud-layer cloud-layer-far" data-depth-family="cloud-far">
-			<span></span>
-			<span></span>
-			<span></span>
-		</div>
-		<div class="cloud-layer cloud-layer-near" data-depth-family="cloud-near">
-			<span></span>
-			<span></span>
-		</div>
-		<div class="cloud-layer cloud-layer-near" data-depth-family="cloud-near">
-			<span></span>
-			<span></span>
-		</div>
-		<div class="atmosphere" data-depth-family="atmosphere"></div>
-		<div class="fall-blur" data-depth-family="fall-blur"></div>
+
+		<div class="freefall-vignette" aria-hidden="true"></div>
 	</div>
 </div>
 
@@ -123,9 +115,13 @@ import FreefallIntroMotion from './FreefallIntroMotion.astro';
 	.freefall-intro {
 		position: fixed;
 		z-index: 1000;
-		inset: 0;
+		inset-block-start: 0;
+		inset-inline-start: 0;
+		inline-size: 100vw;
+		block-size: 100vh;
+		block-size: 100svh;
 		overflow: hidden;
-		background: #e6e8e2;
+		background: var(--ink);
 		pointer-events: none;
 		touch-action: none;
 	}
@@ -134,31 +130,37 @@ import FreefallIntroMotion from './FreefallIntroMotion.astro';
 		display: none;
 	}
 
-	.freefall-intro:not([hidden]):not([data-sequence-ready])
-		~ :global([data-arrival-scene] [data-arrival-circle]),
-	.freefall-intro:not([hidden]):not([data-sequence-ready])
-		~ :global([data-arrival-scene] [data-arrival-title]),
-	.freefall-intro:not([hidden]):not([data-sequence-ready])
-		~ :global([data-arrival-scene] [data-arrival-subtitle]),
-	.freefall-intro:not([hidden]):not([data-sequence-ready])
-		~ :global([data-arrival-scene] [data-scroll-indicator]) {
-		visibility: hidden;
-		opacity: 0;
-	}
-
 	.freefall-world,
 	.terrain-camera,
-	.atmosphere,
-	.fall-blur,
-	.cloud-layer {
+	.fall-clouds,
+	.speed-burst,
+	.freefall-vignette {
 		position: absolute;
 		inset: 0;
 	}
 
 	.freefall-world {
 		visibility: hidden;
+	}
+
+	.freefall-world {
+		--hero-reveal: 0%;
 		overflow: hidden;
-		background: #ccd1c8;
+		background: var(--cobalt);
+		-webkit-mask-image: radial-gradient(
+			circle at 50% 50%,
+			transparent 0 var(--hero-reveal),
+			#000 calc(var(--hero-reveal) + 0.12%)
+		);
+		mask-image: radial-gradient(
+			circle at 50% 50%,
+			transparent 0 var(--hero-reveal),
+			#000 calc(var(--hero-reveal) + 0.12%)
+		);
+	}
+
+	.freefall-intro[data-sequence-ready] {
+		background: transparent;
 	}
 
 	.freefall-intro[data-sequence-ready] .freefall-world {
@@ -166,126 +168,162 @@ import FreefallIntroMotion from './FreefallIntroMotion.astro';
 	}
 
 	.terrain-camera {
-		inset: -34vmax;
-		display: grid;
-		place-items: center;
-		transform-origin: center;
+		transform: none;
 	}
 
-	.terrain-plane {
-		display: block;
-		inline-size: 100%;
-		block-size: 100%;
-	}
-
-	.terrain-plane path {
-		vector-effect: non-scaling-stroke;
-	}
-
-	.cloud-layer {
-		filter: blur(clamp(1rem, 2.6vw, 2.8rem));
-		transform-origin: center;
-	}
-
-	.cloud-layer span {
+	.terrain-pass {
 		position: absolute;
-		display: block;
-		border-radius: 49% 51% 46% 54% / 56% 44% 56% 44%;
-		background: rgb(241 244 238 / 64%);
+		inset: -4%;
+		inline-size: 108%;
+		block-size: 108%;
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: 50% 50%;
+		transform-origin: 50% 50%;
+		user-select: none;
 	}
 
-	.cloud-layer-far span:nth-child(1) {
-		inset-block-start: 6%;
-		inset-inline-start: -5%;
-		inline-size: 42vw;
-		block-size: 25vw;
+	.terrain-far {
+		filter: saturate(0.82) contrast(1.05);
 	}
 
-	.cloud-layer-far span:nth-child(2) {
-		inset-block-start: 51%;
-		inset-inline-end: -11%;
-		inline-size: 48vw;
-		block-size: 31vw;
+	.terrain-mid {
+		clip-path: polygon(0 31%, 100% 31%, 100% 100%, 0 100%);
+		filter: saturate(1.05) contrast(1.08);
 	}
 
-	.cloud-layer-far span:nth-child(3) {
-		inset-block-end: -10%;
-		inset-inline-start: 18%;
-		inline-size: 36vw;
-		block-size: 24vw;
+	.terrain-near {
+		clip-path: polygon(0 56%, 100% 50%, 100% 100%, 0 100%);
+		filter: saturate(1.16) contrast(1.12);
 	}
 
-	.cloud-layer-near span:nth-child(1) {
-		inset-block-start: -18%;
-		inset-inline-end: 5%;
-		inline-size: 61vw;
-		block-size: 43vw;
+	.fall-clouds {
+		filter: drop-shadow(0.45rem 0.55rem 0 rgb(6 28 56 / 34%));
 	}
 
-	.cloud-layer-near span:nth-child(2) {
-		inset-block-end: -22%;
-		inset-inline-start: -13%;
-		inline-size: 68vw;
-		block-size: 48vw;
+	.fall-cloud-pass {
+		position: absolute;
+		inline-size: 34vmax;
+		block-size: 15vmax;
+		overflow: visible;
+		transform-origin: 50% 50%;
 	}
 
-	.atmosphere {
+	.fall-cloud-body {
+		fill: var(--cream-light);
+		stroke: var(--ink);
+		stroke-width: 10;
+		stroke-linejoin: round;
+	}
+
+	.fall-cloud-ink {
+		fill: none;
+		stroke: var(--orange);
+		stroke-width: 8;
+		stroke-linecap: round;
+		opacity: 0.58;
+	}
+
+	.fall-cloud-pass--one {
+		inset-block-start: 8%;
+		inset-inline-start: 8%;
+	}
+
+	.fall-cloud-pass--two {
+		inset-block-start: 9%;
+		inset-inline-start: 63%;
+		transform: scaleX(-1);
+	}
+
+	.fall-cloud-pass--three {
+		inset-block-start: 66%;
+		inset-inline-start: 8%;
+		transform: rotate(-10deg);
+	}
+
+	.fall-cloud-pass--four {
+		inset-block-start: 61%;
+		inset-inline-start: 67%;
+		transform: scaleX(-1) rotate(9deg);
+	}
+
+	.speed-burst {
+		transform-origin: 50% 50%;
+	}
+
+	.speed-burst span {
+		position: absolute;
+		inset-block-start: calc(50% - 0.25rem);
+		inset-inline-start: 50%;
+		inline-size: 68vmax;
+		block-size: clamp(0.16rem, 0.35vw, 0.35rem);
+		background: linear-gradient(
+			90deg,
+			transparent 4%,
+			var(--cream-light) 18% 72%,
+			transparent 94%
+		);
+		transform-origin: 0 50%;
+	}
+
+	.speed-burst span:nth-child(1) {
+		transform: rotate(5deg);
+	}
+	.speed-burst span:nth-child(2) {
+		transform: rotate(34deg);
+	}
+	.speed-burst span:nth-child(3) {
+		transform: rotate(62deg);
+	}
+	.speed-burst span:nth-child(4) {
+		transform: rotate(93deg);
+	}
+	.speed-burst span:nth-child(5) {
+		transform: rotate(124deg);
+	}
+	.speed-burst span:nth-child(6) {
+		transform: rotate(153deg);
+	}
+	.speed-burst span:nth-child(7) {
+		transform: rotate(184deg);
+	}
+	.speed-burst span:nth-child(8) {
+		transform: rotate(214deg);
+	}
+	.speed-burst span:nth-child(9) {
+		transform: rotate(244deg);
+	}
+	.speed-burst span:nth-child(10) {
+		transform: rotate(274deg);
+	}
+	.speed-burst span:nth-child(11) {
+		transform: rotate(304deg);
+	}
+	.speed-burst span:nth-child(12) {
+		transform: rotate(334deg);
+	}
+
+	.freefall-vignette {
 		background:
 			radial-gradient(
 				circle at 50% 50%,
-				rgb(255 255 252 / 4%) 0 22%,
-				rgb(234 239 234 / 28%) 72%,
-				rgb(244 246 241 / 46%) 100%
+				transparent 0 14%,
+				rgb(7 89 182 / 8%) 34%,
+				rgb(6 28 56 / 46%) 100%
 			),
-			linear-gradient(135deg, rgb(255 255 255 / 12%), transparent 58%);
-	}
-
-	.fall-blur {
-		background: radial-gradient(
-			ellipse at 50% 50%,
-			transparent 0 14%,
-			rgb(247 248 244 / 4%) 32%,
-			rgb(247 248 244 / 18%) 100%
-		);
-		transform: scale(1.18);
+			linear-gradient(115deg, rgb(255 242 211 / 7%), transparent 42%);
 	}
 
 	@media (max-width: 40rem) {
-		.terrain-camera {
-			inset: -48vmax;
+		.terrain-pass {
+			inset: -8%;
+			inline-size: 116%;
+			block-size: 116%;
 		}
 
-		.narrow-detail,
-		.cloud-layer-far span:nth-child(3) {
-			display: none;
-		}
-
-		.cloud-layer-far span:nth-child(1) {
-			inset-block-start: 4%;
-			inset-inline-start: -27%;
-			inline-size: 84vw;
-			block-size: 48vw;
-		}
-
-		.cloud-layer-far span:nth-child(2) {
-			inset-block-start: 58%;
-			inset-inline-end: -39%;
-			inline-size: 92vw;
-			block-size: 58vw;
-		}
-
-		.cloud-layer-near span:nth-child(1) {
-			inset-block-start: -5%;
-			inset-inline-end: -34%;
-			inline-size: 108vw;
-			block-size: 66vw;
-		}
-
-		.cloud-layer-near span:nth-child(2) {
-			inset-block-end: -10%;
-			inset-inline-start: -43%;
-			inline-size: 116vw;
-			block-size: 72vw;
+		.fall-cloud-pass {
+			inline-size: 48vmax;
+			block-size: 22vmax;
 		}
 	}
 </style>

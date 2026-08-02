@@ -1,36 +1,199 @@
-<section class="scene airtime-scene" aria-label="Airtime">
-	<div class="airtime-geometry" aria-hidden="true">
-		<span class="airtime-circle"></span>
-		<span class="airtime-flight-path"></span>
+---
+import ComicCloudTrack from '../ComicCloudTrack.astro';
+---
+
+<section
+	class="scene transition-copy-scene"
+	data-transition-copy-scene
+	aria-labelledby="transition-copy"
+>
+	<img
+		class="transition-landscape"
+		src="/assets/hero/hero-desert.webp"
+		alt=""
+		width="1920"
+		height="1080"
+		loading="lazy"
+		decoding="async"
+		draggable="false"
+	/>
+	<div class="transition-grade" aria-hidden="true"></div>
+	<div class="transition-cloud" aria-hidden="true" data-transition-cloud>
+		<ComicCloudTrack depth="far" />
 	</div>
+	<div class="route-mark" aria-hidden="true"></div>
+	<p id="transition-copy" data-transition-copy>
+		PLACEHOLDER TEXT — FINAL COPY TO BE CONFIRMED.
+	</p>
 </section>
 
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+	const transitionCopyWindow = window as Window & {
+		__transitionCopyCleanup?: () => void;
+	};
+	transitionCopyWindow.__transitionCopyCleanup?.();
+
+	const initialiseTransitionCopy = () => {
+		const scene = document.querySelector<HTMLElement>(
+			'[data-transition-copy-scene]',
+		);
+		const copy = scene?.querySelector<HTMLElement>('[data-transition-copy]');
+		const cloud = scene?.querySelector<HTMLElement>('[data-transition-cloud]');
+		if (!scene || !copy || !cloud) return;
+
+		let visible = false;
+		const updateCloud = () => {
+			cloud.toggleAttribute('data-clouds-active', visible && !document.hidden);
+		};
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				visible = entry.isIntersecting;
+				updateCloud();
+			},
+			{ threshold: 0.05 },
+		);
+		const handleVisibility = () => updateCloud();
+
+		const context = gsap.context(() => {
+			gsap
+				.timeline({
+					defaults: { ease: 'none' },
+					scrollTrigger: {
+						id: 'temporary-copy-scroll',
+						trigger: scene,
+						start: 'top bottom',
+						end: 'bottom top',
+						scrub: true,
+						invalidateOnRefresh: true,
+					},
+				})
+				.fromTo(
+					copy,
+					{ yPercent: 38, autoAlpha: 0 },
+					{ yPercent: 0, autoAlpha: 1, duration: 0.32, immediateRender: false },
+					0,
+				)
+				.to(copy, { yPercent: -26, autoAlpha: 0, duration: 0.28 }, 0.72);
+		}, scene);
+
+		const cleanup = () => {
+			observer.disconnect();
+			document.removeEventListener('visibilitychange', handleVisibility);
+			document.removeEventListener('astro:before-swap', cleanup);
+			context.revert();
+			if (transitionCopyWindow.__transitionCopyCleanup === cleanup)
+				delete transitionCopyWindow.__transitionCopyCleanup;
+		};
+
+		observer.observe(scene);
+		document.addEventListener('visibilitychange', handleVisibility);
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		transitionCopyWindow.__transitionCopyCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseTransitionCopy();
+</script>
+
 <style>
-	.airtime-scene {
-		background: var(--color-placeholder);
+	.transition-copy-scene {
+		min-block-size: 100vh;
+		min-block-size: 100svh;
+		isolation: isolate;
+		overflow: hidden;
+		background: var(--cobalt);
 	}
 
-	.airtime-geometry {
-		position: relative;
-		inline-size: min(82vw, 68rem);
-		block-size: min(62vh, 32rem);
-	}
-
-	.airtime-circle {
+	.transition-landscape,
+	.transition-grade,
+	.transition-cloud {
 		position: absolute;
-		inset-block-start: 50%;
-		inset-inline-start: 50%;
-		inline-size: clamp(7rem, 18vw, 14rem);
-		aspect-ratio: 1;
-		border: 1px solid var(--color-ink);
-		border-radius: 50%;
-		transform: translate(-50%, -50%);
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
 	}
 
-	.airtime-flight-path {
+	.transition-landscape {
+		z-index: -4;
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: center;
+		transform: scale(1.045);
+	}
+
+	.transition-grade {
+		z-index: -3;
+		background:
+			linear-gradient(180deg, rgb(6 28 56 / 52%), rgb(6 28 56 / 70%)),
+			repeating-linear-gradient(
+				105deg,
+				transparent 0 24px,
+				rgb(244 228 190 / 4%) 25px 27px
+			);
+	}
+
+	.transition-cloud {
+		z-index: -2;
+		overflow: hidden;
+		opacity: 0.56;
+	}
+
+	.route-mark {
 		position: absolute;
-		inset: 12% 0 0;
-		border-block-start: 2px solid var(--color-ink);
-		border-radius: 50% 50% 0 0;
+		z-index: -1;
+		inset-block: 0;
+		inset-inline-start: clamp(3.2rem, 7vw, 7rem);
+		inline-size: clamp(0.35rem, 0.65vw, 0.65rem);
+		background: var(--red);
+		box-shadow: 0.45rem 0 0 var(--yellow);
+		transform: rotate(2deg);
+		transform-origin: 50% 100%;
+	}
+
+	p {
+		max-inline-size: 22ch;
+		padding: clamp(1.1rem, 2.5vw, 2rem);
+		border: clamp(0.26rem, 0.5vw, 0.5rem) solid var(--ink);
+		background: var(--cream-light);
+		box-shadow: clamp(0.6rem, 1vw, 1rem) clamp(0.6rem, 1vw, 1rem) 0 var(--red);
+		color: var(--ink);
+		font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+		font-size: clamp(2.1rem, 5.6vw, 5.6rem);
+		font-weight: 900;
+		line-height: 0.93;
+		letter-spacing: -0.018em;
+		text-align: center;
+		text-transform: uppercase;
+		transform: rotate(-0.8deg);
+		will-change: transform, opacity;
+	}
+
+	@media (max-width: 40rem) {
+		.transition-landscape {
+			object-position: 52% center;
+		}
+
+		.route-mark {
+			inset-inline-start: 1.65rem;
+		}
+
+		p {
+			max-inline-size: min(18ch, calc(100vw - 4.5rem));
+			font-size: clamp(2.35rem, 11.5vw, 4.2rem);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.transition-cloud {
+			opacity: 0.34;
+		}
+
+		p {
+			will-change: auto;
+		}
 	}
 </style>

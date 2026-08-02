@@ -1,272 +1,32 @@
 # Ryan Wynn — Extreme Sports Web Portfolio Brief
 
-Status: Stage 1 creative direction
+Status: Approved production visual direction
+
 Purpose: Source of truth for portfolio design and implementation
-Last updated: 31 July 2026
+
+Last updated: 2 August 2026
 
 ## 1. Core Direction
 
-The website itself is the showcase.
+The website itself is the showcase. It is one continuous, native-scrolling extreme-sports experience rather than a collection of portfolio sections.
 
-It should not contain a project gallery, project case studies, mock project placeholders, a résumé download, a source-code promotion, technology grids, or lengthy career sections. The design, motion, responsiveness, and interaction should demonstrate Ryan’s web-development ability directly.
+Do not add a project gallery, project case studies, mock projects, a skills grid, a service section, an employment timeline, testimonials, awards, a résumé download, source-code promotion, location, availability, or lengthy career copy.
 
-The experience should feel like one continuous ride rather than a collection of separate pages.
+The final site must feel authored, specific to Ryan, responsive, technically controlled, and visually premium.
 
-## 2. Permanent Content Rule
+## 2. Approved Copy
 
-Do not display Ryan’s location or availability anywhere on the website.
-
-Do not add location or availability back in future revisions unless Ryan explicitly reverses this rule.
-
-## 3. Originality and Anti-AI-Slop Standard
-
-The finished website must feel authored, specific, and unmistakably Ryan’s. It must not resemble a generic AI-generated portfolio in its visual design, writing, motion, or code.
-
-### Visual rules
-
-- Build the art direction from Ryan’s real relationship with skydiving, freestyle motocross, and rock climbing.
-- Use one coherent design system instead of combining unrelated fashionable effects.
-- Every shape, colour, type choice, transition, and texture must have a defined role.
-- Use a deliberate grid, type scale, spacing system, colour system, and motion system.
-- Prefer controlled composition and original details over feature quantity.
-- Keep the extreme-sports references specific and informed rather than generic.
-- Use original, owned, commissioned, or properly licensed visual assets.
-- Do not ship generative placeholder images or synthetic extreme-sports photography.
-- Do not copy Dave Holloway’s illustrations, layout, assets, branding, or source code.
-
-### Prohibited visual clichés
-
-- Purple-and-blue neon gradients
-- Glowing gradient blobs
-- Decorative floating orbs
-- Excessive glassmorphism
-- Random 3D objects
-- Meaningless particle fields
-- Generic bento grids
-- Unnecessary pill-shaped controls
-- Fake code terminals
-- Stock startup illustrations
-- Generic astronaut imagery
-- Constant glow around every interactive element
-- Scroll effects that exist only to demonstrate an animation library
-- Multiple unrelated animation styles
-
-### Writing rules
-
-- Use only approved copy.
-- Do not add phrases such as “crafting digital experiences,” “where creativity meets code,” “passionate developer,” or similarly generic portfolio language.
-- Do not invent achievements, capabilities, experience, or personal claims.
-- Avoid decorative labels, technical jargon, and filler copy.
-- Keep the voice confident, playful, concise, and specific.
-
-### Code rules
-
-- Code should read as intentional production code written for this exact website.
-- Use small, focused components with clear responsibilities.
-- Use names derived from the actual experience: freefall, airtime, card track, visor transition, rock face, and footer.
-- Keep animation timelines modular and scoped to their scenes.
-- Centralise reusable tokens and motion values.
-- Avoid duplicated styles, unexplained magic numbers, dead code, and unused dependencies.
-- Avoid giant components, premature abstractions, and generic utility wrappers.
-- Do not add comments that explain obvious syntax.
-- Do not leave scaffolding comments, placeholder TODOs, generated essays, or agent instructions in shipped source files.
-- Do not mention AI tools, assistants, agents, prompts, or generated code in the production interface or source comments.
-- Format, lint, type-check, build, and manually review the complete source before release.
-- Inspect every generated change and rewrite anything that does not match the established architecture or design language.
-
-### Final authenticity review
-
-Before launch, perform three separate reviews:
-
-1. Visual review for generic AI design patterns
-2. Copy review for filler or generic language
-3. Code review for generated-code smells, unnecessary complexity, duplication, and inconsistent naming
-
-No section is complete merely because it works. It must also feel intentionally art-directed and technically maintained.
-
-## 4. Identity
-
-**Name:**
-Ryan Wynn
-
-**Professional title:**
-Web Developer
-
-**Hero content:**
+Hero:
 
 > RYAN WYNN
+>
 > Web Developer
 
-Do not add a supporting line, introduction, location, availability, or paragraph to the hero.
-
-## 5. Minimal About Copy
-
-Use only this exact sentence:
+About:
 
 > I like my sports extreme and my websites anything but ordinary.
 
-Do not extend, rewrite, subtitle, or add another sentence to it. Do not add a location, availability statement, biography, employment history, or second paragraph.
-
-## 6. Footer Contact Details
-
-The following contact methods should appear only in the footer:
-
-**Email:**
-`[PROFESSIONAL_EMAIL]`
-
-**GitHub:**
-https://github.com/Ryan-W-Dev
-
-**LinkedIn:**
-https://www.linkedin.com/in/ryan-wynn-01a784403/
-
-**Telegram:**
-`[TELEGRAM_URL]`
-
-**WhatsApp:**
-`[WHATSAPP_URL]`
-
-Do not add a contact headline, contact paragraph, résumé link, source-code link, location, or availability text.
-
-## 7. Signature Concept — Extreme Sports
-
-Extreme sports are Ryan’s unique creative signature.
-
-The visual and motion language should draw from:
-
-- Skydiving
-- Freestyle motocross
-- Rock climbing
-
-These sports should shape the experience rather than appear as decorative stock photographs.
-
-### Skydiving language
-
-- Altitude
-- Freefall
-- Aerial perspective
-- Clouds and atmosphere
-- Terminal velocity
-- Sustained downward speed
-- Parachute-like circular expansion
-
-### Freestyle motocross language
-
-- Airtime
-- Launch ramps
-- Curved flight paths
-- Suspension and impact
-- Rotation
-- Momentum
-- Controlled risk
-
-### Rock-climbing language
-
-- Route finding
-- Grip
-- Chalk marks
-- Vertical progress
-- Anchors and carabiner geometry
-- Rock contours
-- Precision
-
-### Creative restraint
-
-- Avoid generic flames, skulls, racing stripes, sports logos, or energy-drink styling.
-- Avoid turning the website into a game.
-- Avoid using all three sports in every scene.
-- Give each sport a clear role in the journey.
-- Keep the visual system premium, graphic, and editorial.
-- Use movement, geometry, perspective, and texture to communicate the sports.
-
-## 8. Entry Loading Sequence — Freefall
-
-Every entry begins with a cinematic skydiving sequence.
-
-### Camera direction
-
-- Camera points straight down toward the ground.
-- The camera remains completely stationary and perpendicular to the ground.
-- The landscape, cloud layers, and atmosphere rush toward and past the viewer from a fixed central vanishing point.
-- Extreme terminal-velocity movement begins on the first visible frame and remains constant for the complete 15-second freefall.
-- Multiple independently timed depth passes recycle only while invisible so the motion never pauses or exposes a reset.
-- The freefall world maintains one uninterrupted speed and direction until the hero transition, with no destination or holding phase.
-
-### Transition into the hero
-
-1. At exactly 15 seconds, the loading world begins a smooth fade while continuing at full terminal velocity.
-2. The freefall world remains in motion until it is no longer visible.
-3. “RYAN WYNN” appears in the exact centre of the screen.
-4. A solid-colour circle appears behind or around the central name.
-5. The circle expands outward with a fluid, organic perimeter.
-6. The circle fills the viewport and becomes the transition surface.
-7. The hero is revealed from inside the expanding colour field.
-8. Ryan’s name remains visually continuous so the transition does not feel like a page reload.
-
-### Loading-sequence safeguards
-
-- The full cinematic sequence begins immediately and runs uninterrupted whenever the visitor enters or reloads the website.
-- The entry experience has one route: freefall, circular reveal, then hero.
-- Never keep the visitor waiting for the animation if required assets fail.
-- Use the sequence to preload critical hero assets.
-- If advanced rendering is unavailable, use an equivalent timed 2D descent rather than bypassing the sequence.
-
-## 9. Experience Structure
-
-The website should be one continuous page with cinematic visual scenes. Scrolling advances the experience without breaking native navigation.
-
-### Scene 01 — Arrival
-
-Content:
-
-- Ryan Wynn
-- Web Developer
-- Minimal scroll indicator
-
-Experience:
-
-- The expanding loading circle resolves into the hero’s main graphic form.
-- Ryan’s name is centred and visually dominant.
-- The hero is calm after the speed of the freefall sequence.
-- One subtle cursor interaction suggests that the experience is responsive.
-
-### Scene 02 — Airtime
-
-Content:
-
-- No supporting line
-- No paragraph
-- No technology list
-
-Experience:
-
-- The hero’s circle stretches into a curved freestyle-motocross flight path.
-- Typography and graphic elements lift, rotate, and settle with controlled suspension-like easing.
-- The movement communicates airtime without showing a literal motorcycle in every frame.
-- The hero composition transforms rather than disappearing.
-
-### Scene 03 — Scroll-Driven Extreme-Sports Cards
-
-As the visitor scrolls down, the cards travel horizontally from right to left.
-
-Implementation:
-
-- Use a GSAP ScrollTrigger timeline tied to native vertical scroll progress.
-- Pin the scene only while the horizontal card sequence is crossing the viewport.
-- Map downward scrolling to smooth right-to-left card movement.
-- Reverse the card movement cleanly when the visitor scrolls upward.
-- Calculate the horizontal travel distance from the rendered card track and viewport width.
-- Keep part of the next card visible.
-- Preserve native vertical scrolling on desktop and touch devices.
-- Recalculate the travel distance and ScrollTrigger positions when the viewport changes.
-- Let the final card settle before the helmet-visor transition begins.
-- Do not auto-advance.
-- Do not use infinite looping unless separately approved.
-- Do not make the cards draggable.
-- Do not add previous or next buttons.
-- Do not add arrow-key card navigation.
-
-Working card directions:
+Card sequence:
 
 1. **FREEFALL** — Commit to the drop.
 2. **AIRTIME** — Make the impossible feel weightless.
@@ -275,195 +35,263 @@ Working card directions:
 5. **FLOW** — Every move leads to the next.
 6. **SUMMIT** — Finish higher than you started.
 
-The card copy remains subject to final approval. Cards are not projects, services, or a skills grid.
+Do not extend or rewrite this copy. Do not add supporting hero copy, a contact headline, a biography paragraph, decorative slogans, filler text, invented achievements, or marketing claims.
+
+## 3. Contact Details
+
+Contact methods appear as one persistent component that transforms between the hero, compact navigation state, and footer state.
+
+- Email: mailto:ryan.james.wynn@gmail.com
+- GitHub: https://github.com/Ryan-W-Dev
+- LinkedIn: https://www.linkedin.com/in/ryan-wynn-01a784403/
+- Telegram: https://t.me/ryanwynn4
+- WhatsApp: https://wa.me/971508114541
+
+All five contact methods are interactive. External profile and messaging links open in a new tab; Email uses the visitor's mail application. The interface label is exactly “WhatsApp”.
+
+Every icon must retain a clear accessible name and visible keyboard focus treatment throughout the transformation.
+
+## 4. Visual System
+
+The approved production direction is a bespoke vintage extreme-sports comic and screen-print system.
+
+### Palette
+
+- Very dark navy ink
+- Saturated cobalt blue
+- Burnt orange
+- Warm cream
+- Vivid red
+- Small yellow accents
+
+### Typography
+
+- Ryan’s name and card titles use large, tightly composed condensed display typography.
+- Display lettering uses cream fill, dark ink edges, and controlled red offset shadows.
+- Supporting text remains highly legible and concise.
+- Do not use generic startup typography, novelty comic fonts, excessive rounded UI, or pill-shaped containers.
+
+### Illustration and texture
+
+- Use bold ink contours, flat colour fields, strong crop, screen-print texture, restrained halftone, and subtle paper grain.
+- Texture supports depth and material character; it must not reduce text or control legibility.
+- Avoid generic photography, glassmorphism, neon gradients, glowing blobs, floating orbs, particle fields, random 3D objects, bento grids, fake terminals, and stock startup illustrations.
+- Do not copy another portfolio’s layouts, branding, assets, or code.
+
+### Asset direction
+
+The four supplied concept artworks are the primary art-direction sources. Do not modify the original Desktop files. Production assets are optimized derivatives or newly generated artwork based on the approved palette and illustration character.
+
+- The freefall environment contains no person.
+- The hero landscape contains no person, rider, text, or logo.
+- Each of the six cards uses a distinct artwork assignment.
+- The footer racer uses Ryan's supplied comic portrait as the identity reference. Only the visible face is replaced; the existing helmet, equipment, pose, crop, composition, lighting, and comic treatment remain intact.
+- The footer face must remain recognisable as Ryan, with both eyes clearly visible and no goggles, visor glass, sunglasses, face shield, or dark eye covering.
+- Do not repeat artwork unless the reuse is an intentional visual motif.
+- Do not add visible brand marks or unapproved logos to new artwork.
+
+## 5. Extreme-Sports Roles
+
+Skydiving defines the entry sequence, altitude, central vanishing point, and sustained speed.
+
+Freestyle motocross defines the hero-to-cards momentum, airtime geometry, card imagery, suspension language, and the small scroll-bound dirt-bike guide.
+
+Rock climbing defines the visor destination, route line, anchors, rock contours, and About composition.
+
+Do not use all three sports indiscriminately in every scene. Each sport has a clear structural role.
+
+## 6. Entry Sequence — Four-Second Freefall
+
+Every fresh entry or reload runs the complete four-second sequence.
+
+### Camera and motion
+
+- The viewpoint points straight down and remains completely stationary.
+- The camera root has no translation, rotation, scale, skew, or compensation tween.
+- The central vanishing point remains aligned to the exact viewport centre from the first visible frame.
+- A person-free cobalt, cream, and orange freefall environment moves through independent far-terrain, mid-terrain, near-terrain, cloud, and speed-stroke passes.
+- The passes expand from one shared centre and recycle while visually masked by opacity.
+- Extreme-speed motion begins on the first visible frame and continues at full speed through the hero handoff.
+- The sequence lasts exactly four seconds. There is no skip control and no user input requirement.
+
+### First paint and handoff
+
+- Critical artwork is decoded before the first-paint visibility gate opens.
+- All GSAP time-zero states are applied before `data-sequence-ready` reveals the world.
+- From exactly 3.35 seconds, a central circular mask expands while the freefall continues at full speed outside it. The hero landscape and Ryan's name resolve inside the opening.
+- The expanding field becomes the hero and never shrinks into a decorative circle behind the name. There is no blank frame, hard cut, or opacity-only handoff.
+- The hero name remains visually continuous into the completed hero.
+- Asset failure must not prevent the timed sequence from completing.
+- Page scrolling is restored cleanly when the intro completes.
+
+### Lifecycle
+
+- Pause the sequence while the document is hidden and resume it without restarting.
+- Revert the timeline, inline styles, listeners, visibility state, and scroll lock on teardown and development hot reload.
+- Reduced-motion users receive the same timed structure with substantially reduced depth expansion.
+
+## 7. Scene Structure
+
+The page uses semantic Astro components and native vertical scrolling.
+
+### Scene 01 — Hero / Arrival
+
+- Full-bleed cobalt-and-orange desert artwork.
+- Giant centred “RYAN WYNN” title and the exact “Web Developer” subtitle.
+- Strong cream lettering, dark ink edge, and red print-offset shadow.
+- Separate far, middle, and near cream cloud strips drift laterally at different speeds.
+- Every cloud strip contains at least two identical copies and travels linearly by exactly one copy width, producing a seamless loop with no gap, seam, jump, reversal, or background drift over extended viewing.
+- The background image itself does not move.
+- Cloud animation pauses when the hero is outside the viewport, the tab is hidden, or reduced motion is requested.
+- The persistent contact component begins as a floating five-icon panel over the lower-right hero area.
+
+### Scene 02 — Temporary Copy Transition
+
+- This native-scroll scene appears immediately after the hero and before the cards.
+- Its only copy is exactly: `PLACEHOLDER TEXT — FINAL COPY TO BE CONFIRMED.`
+- The copy enters from below, remains readable near the centre, and fades as it approaches the top. The movement is tied to scroll and reverses precisely.
+- Desert, sky, cloud, and route-line cues continue the hero composition into the card stage. Do not restore the flat Airtime placeholder scene.
+
+### Scene 03 — Scroll-Controlled Card Track
+
+- Six large illustrated cards travel from right to left in response to native vertical scrolling.
+- A single GSAP timeline with ScrollTrigger pins the shared stage only while the sequence and visor transition are active.
+- Downward scrolling advances the cards; upward scrolling reverses them precisely.
+- Travel distance is calculated from rendered card and viewport geometry and recalculated on resize.
+- Part of the next card remains visible.
+- The cards do not auto-advance, drag, loop, respond to arrow keys, or expose previous/next controls.
+- Each card contains one distinct optimized illustration, its number, approved title, and approved line.
+- The GRIP card uses the supplied rock-climbing direction and must not show motocross repair, gloves, or mechanical work.
+- Card artwork is non-draggable and does not capture pointer input.
+- The final SUMMIT card settles briefly before the visor begins.
 
 ### Scene 03 → Scene 04 — Helmet-Visor Transition
 
-After the card experience, the camera should pan, align with a helmet visor, and pass through it into the About scene.
+- The card sequence and visor share one pinned stage and one reversible ScrollTrigger timeline.
+- Preserve the existing timeline labels: final-card settle, visor handoff, helmet form, visor lock, pass-through, and rock-face resolve.
+- The final card aligns centrally, card typography leaves deliberately, and dark helmet geometry forms.
+- The visor remains wider than tall at every viewport, including portrait mobile sizes.
+- The shell and rim may extend beyond narrow viewport edges.
+- The visor opening spatially reveals the rock-climbing scene.
+- About copy remains hidden until enough of the opening exists to reveal it cleanly.
+- Card and About typography must not overlap in an accidental or clipped state.
+- Reverse scrolling restores every layer in the exact opposite order.
+- Only vertical scroll controls this transition. It does not autoplay and has no button trigger.
 
-The complete transition is controlled only by vertical scroll progress. It must not autoplay, run on a timer, or be triggered by a button.
+### Scene 04 — Rock Face / About
 
-Transition choreography:
+- A detailed illustrated burnt-orange formation, cobalt canyon, cream sky, and clouds resolve through the visor.
+- Inked ledges, fissures, print texture, a route line, yellow anchors, and a deliberately small climber establish depth without reading as flat CSS geometry.
+- The approved About sentence is the only copy.
+- The composition remains readable and spatially connected to the visor reveal.
+- Do not turn this into a conventional biography panel.
 
-1. The selected or final card slows and settles as the visitor scrolls.
-2. A dark helmet silhouette begins to form from the card’s graphic geometry.
-3. The visor becomes the only clear opening and locks to the centre of the viewport.
-4. Reflections move across the curved visor surface as scroll progress advances.
-5. The card track and surrounding interface pull backward while the visor remains centred.
-6. The camera banks slightly and moves toward the visor.
-7. The visor rim passes around the edges of the viewport with layered parallax.
-8. The camera travels through the visor.
-9. The view inside the helmet becomes the rock-climbing environment of Scene 04.
-10. Reversing the scroll reverses the complete camera movement cleanly.
+### Scene 05 — Footer Racer
 
-This should capture the continuity and camera-led quality of the transitions on Dave Holloway’s portfolio while using original extreme-sports imagery, geometry, animation, and code.
+- Full-width comic racer artwork closes the experience.
+- The visible face is based on Ryan's attached comic portrait and is integrated inside the unchanged helmet opening with matching perspective, proportions, skin tone, ink, halftone, shadows, and highlights.
+- The racer’s natural eyes remain clearly visible with no goggles, visor, face shield, sunglasses, or eye-covering shadow.
+- Closed-eye artwork is derived from each approved open-eye portrait with identical dimensions and crop, then clipped to the exact eye regions in the source viewBox. The blink is never anchored to fixed viewport coordinates.
+- Only the clipped eye-region artwork animates; the face and artwork never scale or jump for the blink.
+- Blinks use irregular timing with an occasional double blink.
+- Blinking pauses while the footer is offscreen, the tab is hidden, or reduced motion is requested.
+- A comic UFO enters from the right behind the rider's head, aligns over the left-rail dirt bike, projects a short beam, and removes the bike smoothly. Layering keeps the UFO and beam away from the visible face and eyes.
+- With a fine pointer, the UFO then chases the live footer cursor through one smoothed animation-frame loop. On arrival, a short beam replaces the normal footer cursor with the same small bike artwork. The replacement remains decorative and never captures input.
+- Leaving the footer, reversing the footer scroll, hiding the document, changing pointer mode, or tearing down the page immediately restores the normal cursor and scroll-bound bike and removes all tracking state.
+- Touch uses the entrance, beam, abduction, and a short decorative settle only; it never emulates cursor tracking.
+- The persistent contact component settles into a wider labelled panel over the footer.
+- Do not add contact marketing copy, a résumé link, source-code link, location, or availability.
 
-### Scene 04 — About / Rock Face
+## 8. Persistent Social Transformation
 
-Content:
+The five contact items are one DOM component, not duplicated hero, navigation, and footer sets.
 
-> I like my sports extreme and my websites anything but ordinary.
+1. In the hero it floats at the lower right.
+2. As the hero leaves, it moves to a compact top-centre panel.
+3. As the footer enters, it moves to the lower footer region, widens, and reveals labels.
 
-Experience:
+The footer transformation begins only when approximately 55–60% of the footer is visible. Labels remain large enough to read as contact actions rather than a miniature toolbar.
 
-- The portal resolves into a stylised rock surface or climbing-route composition.
-- A minimal route line guides the eye toward the About statement.
-- The visual system opens and becomes calmer so the text remains readable.
-- Chalk-like marks, anchor geometry, or subtle rock contours may provide texture.
-- Avoid a conventional biography panel.
+The transformation is controlled by scroll progress and reverses cleanly. It must remain readable, keyboard accessible, and inside the viewport on mobile and desktop.
 
-### Scene 05 — Descent and Footer
+## 9. Scroll-Bound Dirt-Bike Guide
 
-Content:
+- A small code-native comic dirt bike is one rigid component with one root coordinate system and follows total page scroll progress.
+- The root handles route position, scale, and rotation; wheel rotation and suspension displacement remain local transforms.
+- It descends vertically along the left rail through the hero and temporary-copy scene, follows one gradual lower-left turn, and travels horizontally along the bottom during the cards.
+- It leaves before the visor forms, remains hidden throughout the complete visor pass-through, and restores on the left rail only after the About scene resolves. Reverse scrolling restores this order precisely.
+- It uses safe page edges without covering important copy, card text, card numbers, contact controls, or the helmet focal point.
+- Wheel rotation, suspension displacement, and the bike’s route are derived only from scroll progress.
+- It does not use idle timers, autoplay, or input capture. Pointer tracking is permitted only for the footer UFO chase and cursor-bike replacement described above.
+- It is decorative, `aria-hidden`, and `pointer-events: none`.
+- With reduced motion it rests at one stable landmark without travel or wheel animation.
 
-- Email
-- GitHub
-- LinkedIn
-- Telegram
-- WhatsApp
+## 10. Seamless Motion Rules
 
-Experience:
+- The page must feel like one connected composition.
+- Each scene inherits a colour, form, line, or motion cue from the previous scene.
+- Prefer masking, scale, camera-space continuity, and spatial transformation over repeated fade-ins.
+- Native scrolling remains usable on desktop and touch devices.
+- Do not trap or hijack scroll.
+- Scroll-controlled motion is reversible.
+- Keep interaction motion tied to clear functional or narrative roles.
+- Do not add unrelated animation demonstrations.
 
-- The climbing route resolves or reaches a visual summit.
-- Motion becomes calm and stable.
-- Contact links appear only in the footer.
-- The footer should be simple, clear, and easy to use.
-- Do not add a contact headline or additional marketing copy.
-
-## 10. Seamless Transition Rules
-
-- The website must feel like one connected composition.
-- Persistent visual elements should transform between scenes.
-- Each scene should inherit at least one form, colour, line, or motion from the previous scene.
-- Do not create obvious rectangular page boundaries.
-- Avoid repeated fade-in-and-fade-out effects.
-- Prefer camera movement, masking, reflow, scale, rotation, and spatial transformation.
-- Each transition should prepare the next scene before the current scene leaves.
-- Scrolling downward and upward must both feel intentional.
-- Navigation should move smoothly to experience landmarks.
-- Do not trap the user in scroll-jacking.
-- Native browser navigation and scrolling must remain usable.
-
-## 11. Interaction Rules
-
-- Interaction is the primary content.
-- Motion should respond quickly and precisely.
-- Hover effects must communicate interactivity.
-- Cursor effects should support the composition rather than chase the pointer as decoration.
-- Use the extreme-sports motion language consistently.
-- Avoid collections of unrelated animation tricks.
-- Touch devices need purpose-built interactions instead of desktop hover effects.
-- The card sequence is controlled only by vertical scroll and cannot be dragged.
-- The Scene 03 helmet-visor transition is controlled only by vertical scroll.
-
-## 12. Text Restraint Rules
-
-- No project showcase.
-- No project case studies.
-- No skills grid.
-- No long technology list.
-- No service section.
-- No employment timeline.
-- No testimonials.
-- No awards section.
-- No résumé download.
-- No portfolio source-code promotion.
-- No location or availability.
-- No lengthy introduction.
-- No paragraph should exceed approximately 45 words.
-- The homepage should contain fewer than approximately 120 visible words, excluding navigation and legal text.
-- Let typography, space, movement, and interaction carry the experience.
-
-## 13. Visual Direction
-
-- Extreme-sports editorial identity
-- Large-scale use of Ryan’s name
-- Strong typography
-- Clean light or neutral foundation
-- One controlled solid accent colour per visual state
-- Fluid solid-colour transitions
-- Generous negative space
-- Crisp geometry and deliberate composition
-- Minimal interface chrome
-- High contrast without excessive glow
-- Depth created through scale, overlap, perspective, camera movement, and parallax
-- Original illustration and motion language
-- No copied Dave Holloway assets, layouts, sports, or transition code
-
-## 14. Technical Quality Requirements
-
-The website should demonstrate:
-
-- Semantic HTML
-- Responsive CSS
-- Well-structured Astro components
-- Purposeful TypeScript
-- Smooth GSAP animation
-- A scroll-linked horizontal card sequence built with GSAP ScrollTrigger
-- Reversible ScrollTrigger timelines where appropriate
-- Strong mobile adaptation
-- Fast initial loading
-- Optimized fonts and visual assets
-- Stable layout with no avoidable content shifts
-- SEO metadata and structured content
-- Clean, maintainable source code
-
-## 15. Implementation Boundaries
+## 11. Technical Architecture
 
 Core stack:
 
 - Astro
+- Semantic Astro components
 - TypeScript
 - Custom CSS
 - GSAP
 - GSAP ScrollTrigger
 - Native scrolling
 
-Provisionally justified for the freefall and portal sequences:
+Do not add React, a component library, smooth-scroll dependency, WebGL renderer, or other dependency without a separately approved technical need.
 
-- Three.js or focused WebGL
-- A lightweight pre-rendered visual fallback
+Keep components focused on actual experience roles: freefall, arrival, temporary copy transition, card track, visor transition, rock face, persistent contact, footer portrait and UFO motion, and dirt-bike guide.
 
-Add only when an approved prototype proves the benefit:
+All timelines, ScrollTriggers, observers, timers, media-query listeners, resize listeners, and hot-reload hooks must be scoped and fully cleaned up.
 
-- Lenis
-- Rive
+## 12. Performance and Accessibility
 
-Avoid:
+- Target smooth motion on modern desktop and mobile hardware.
+- Prefer transforms and opacity for continuous animation.
+- Activate `will-change` only while the relevant sequence is active.
+- Use optimized WebP raster derivatives with explicit dimensions.
+- Preserve stable layout and prevent horizontal page overflow.
+- Pause time-based decorative motion when offscreen or hidden.
+- Use no more than one animation-frame loop for the footer chase, feed it the latest pointer target continuously, and cancel it outside the footer and during teardown.
+- Do not autoplay audio or add flashing effects.
+- Maintain accessible names and visible focus indicators for links.
+- Decorative motion and images remain hidden from assistive technology.
+- Preserve semantic heading, section, list, navigation, and footer structure.
+- Support `prefers-reduced-motion` without removing access to content.
 
-- React without a specific need
-- Generic component libraries
-- Template-based portfolio sections
-- Excessive dependencies
-- Animation added solely to make the website busy
-- Forcing advanced rendering on devices that cannot run it smoothly
+## 13. Quality Gate
 
-## 16. Performance and Accessibility Limits
+Before approval:
 
-- Target smooth 60 fps on modern desktop hardware.
-- Prefer transforms and opacity for interface animation.
-- Use adaptive quality for WebGL.
-- Reduce terrain detail, particles, and post-processing on mobile.
-- Pause rendering when the tab is hidden.
-- Dispose of WebGL resources after a sequence when they are no longer needed.
-- Do not autoplay audio.
-- Do not use flashing effects.
-- Avoid rapid camera rotation.
-- Provide an equivalent timed 2D animation when advanced rendering is unsupported.
+- Run `npm run check`.
+- Run `npm run lint`.
+- Run `npm run format:check`.
+- Run `npm run build`.
+- Run `git diff --check`.
+- Inspect at 390×844, 768×1024, 1440×900, and 1920×1080.
+- Scroll from top to bottom and back upward.
+- Verify the exact four-second intro and first-frame alignment.
+- Verify the card travel, final settle, visor pass-through, and reverse restoration.
+- Verify the persistent contact transformation and keyboard focus.
+- Verify the footer blink pause and cleanup rules.
+- Verify the dirt bike route landmarks, footer abduction, beam, fine-pointer chase, cursor-bike replacement, touch fallback, and exact reverse restoration.
+- Verify the face and open/closed-eye alignment in both responsive portrait sources.
+- Run each hero cloud loop for at least 30 seconds at desktop and mobile widths and verify no visible seam, jump, gap, reversal, or drift.
+- Check for layout jumps, horizontal overflow, clipped text, uncovered viewport edges, broken images, and browser console errors.
+- Capture fresh desktop and mobile evidence for the freefall, expansion midpoint, hero, cloud loop, arrow states, temporary-copy entry and fade, bike landmarks, climbing scene, UFO stack and chase, reverse restoration, and open/closed eyes.
+- Do not stage or commit changes without explicit approval.
 
-## 17. Success Test
+## 14. Success Test
 
-The website succeeds when a visitor can understand:
-
-1. Ryan Wynn is a web developer.
-2. Extreme sports are his authentic creative signature.
-3. He cares about bold design, usability, and interaction.
-4. He can create polished, technically controlled web experiences.
-5. He understands responsive design, accessibility, and performance.
-6. His email, GitHub, LinkedIn, Telegram, and WhatsApp are easy to find in the footer.
-
-## 18. Remaining Placeholders
-
-- `[PROFESSIONAL_EMAIL]`
-- `[TELEGRAM_URL]`
-- `[WHATSAPP_URL]`
+The website succeeds when a visitor can understand that Ryan Wynn is a web developer, recognise extreme sports as his authentic creative signature, experience polished responsive interaction, and reach every available contact method without encountering generic portfolio filler.

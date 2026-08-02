@@ -1,67 +1,746 @@
 ---
-const contacts = [
-	{ label: 'Email' },
-	{ label: 'GitHub', href: 'https://github.com/Ryan-W-Dev' },
-	{
-		label: 'LinkedIn',
-		href: 'https://www.linkedin.com/in/ryan-wynn-01a784403/',
-	},
-	{ label: 'Telegram' },
-	{ label: 'WhatsApp' },
-];
+import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 ---
 
-<footer class="scene contact-footer">
-	<nav aria-label="Contact">
-		<ul>
-			{
-				contacts.map((contact) => (
-					<li>
-						{contact.href ? (
-							<a href={contact.href}>{contact.label}</a>
-						) : (
-							<span>{contact.label}</span>
-						)}
-					</li>
-				))
-			}
-		</ul>
-	</nav>
+<footer class="scene contact-footer" data-contact-footer>
+	<div
+		class="footer-portrait-frame footer-portrait-frame--desktop"
+		aria-hidden="true"
+	>
+		<img
+			src="/assets/footer/footer-racer-ryan-v04.webp"
+			alt=""
+			width="1920"
+			height="823"
+			loading="lazy"
+			decoding="async"
+			draggable="false"
+		/>
+	</div>
+	<div
+		class="footer-portrait-frame footer-portrait-frame--mobile"
+		aria-hidden="true"
+	>
+		<img
+			src="/assets/footer/footer-racer-ryan-mobile-v04.webp"
+			alt=""
+			width="900"
+			height="1200"
+			loading="lazy"
+			decoding="async"
+			draggable="false"
+		/>
+	</div>
+
+	<div class="footer-ufo-flight" data-footer-ufo-flight aria-hidden="true">
+		<div class="footer-ufo" data-footer-ufo>
+			<svg viewBox="0 0 280 150" role="presentation">
+				<path class="ufo-dome" d="M76 73C87 24 116 8 141 8C170 8 196 29 204 73Z"
+				></path>
+				<path
+					class="ufo-window"
+					d="M99 63C107 35 123 24 142 24C160 24 177 38 184 63Z"></path>
+				<path
+					class="ufo-rim"
+					d="M25 73C53 55 225 55 255 73L270 92C238 116 45 116 10 92Z"></path>
+				<path
+					class="ufo-body"
+					d="M36 94C76 118 207 120 246 94C229 136 69 143 36 94Z"></path>
+				<path
+					class="ufo-ink"
+					d="M29 82H257M58 103C104 118 185 119 226 103M114 17L104 3M170 17L180 3"
+				></path>
+				<circle class="ufo-light" cx="62" cy="91" r="7"></circle>
+				<circle class="ufo-light" cx="105" cy="99" r="7"></circle>
+				<circle class="ufo-light" cx="149" cy="101" r="7"></circle>
+				<circle class="ufo-light" cx="193" cy="98" r="7"></circle>
+				<circle class="ufo-light" cx="234" cy="90" r="7"></circle>
+			</svg>
+			<div class="ufo-beam" data-ufo-beam></div>
+		</div>
+	</div>
+
+	<div
+		class="footer-head-shield footer-head-shield--desktop"
+		aria-hidden="true"
+	>
+		<img
+			src="/assets/footer/footer-racer-ryan-v04.webp"
+			alt=""
+			width="1920"
+			height="823"
+			decoding="async"
+			draggable="false"
+		/>
+	</div>
+	<div class="footer-head-shield footer-head-shield--mobile" aria-hidden="true">
+		<img
+			src="/assets/footer/footer-racer-ryan-mobile-v04.webp"
+			alt=""
+			width="900"
+			height="1200"
+			decoding="async"
+			draggable="false"
+		/>
+	</div>
+
+	<svg
+		class="eye-overlay eye-overlay--desktop"
+		viewBox="0 0 1920 823"
+		preserveAspectRatio="xMidYMid slice"
+		aria-hidden="true"
+	>
+		<defs>
+			<clipPath id="desktop-eye-regions">
+				<ellipse cx="592" cy="305" rx="57" ry="39"></ellipse>
+				<ellipse cx="717" cy="306" rx="58" ry="39"></ellipse>
+			</clipPath>
+		</defs>
+		<g class="eye-lids" clip-path="url(#desktop-eye-regions)">
+			<image
+				href="/assets/footer/footer-racer-ryan-v04-closed.webp"
+				width="1920"
+				height="823"
+			/>
+		</g>
+	</svg>
+
+	<svg
+		class="eye-overlay eye-overlay--mobile"
+		viewBox="0 0 900 1200"
+		preserveAspectRatio="xMidYMid slice"
+		aria-hidden="true"
+	>
+		<defs>
+			<clipPath id="mobile-eye-regions">
+				<ellipse cx="404" cy="416" rx="61" ry="45"></ellipse>
+				<ellipse cx="556" cy="419" rx="63" ry="45"></ellipse>
+			</clipPath>
+		</defs>
+		<g class="eye-lids" clip-path="url(#mobile-eye-regions)">
+			<image
+				href="/assets/footer/footer-racer-ryan-mobile-v04-closed.webp"
+				width="900"
+				height="1200"
+			/>
+		</g>
+	</svg>
+
+	<div class="footer-grade" aria-hidden="true"></div>
+	<div class="footer-ink-stripe" aria-hidden="true"></div>
 </footer>
+
+<div class="footer-cursor-bike" data-footer-cursor-bike aria-hidden="true">
+	<DirtBikeArtwork />
+</div>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	const footerWindow = window as Window & {
+		__footerMotionCleanup?: () => void;
+	};
+	footerWindow.__footerMotionCleanup?.();
+
+	const initialiseFooterMotion = () => {
+		const footer = document.querySelector<HTMLElement>('[data-contact-footer]');
+		const ufoFlight = footer?.querySelector<HTMLElement>(
+			'[data-footer-ufo-flight]',
+		);
+		const ufo = footer?.querySelector<HTMLElement>('[data-footer-ufo]');
+		const beam = footer?.querySelector<HTMLElement>('[data-ufo-beam]');
+		const cursorBike = document.querySelector<HTMLElement>(
+			'[data-footer-cursor-bike]',
+		);
+		const guide = document.querySelector<HTMLElement>('[data-dirt-bike-guide]');
+		if (!footer || !ufoFlight || !ufo || !beam || !cursorBike || !guide) return;
+
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const finePointer = window.matchMedia('(pointer: fine)');
+		let context: gsap.Context | undefined;
+		let footerVisible = false;
+		let trackingReady = false;
+		let pointerInside = false;
+		let cursorMode = false;
+		let beamPending = false;
+		let frame = 0;
+		let beamTimer = 0;
+		let nextBlinkTimer = 0;
+		let openBlinkTimer = 0;
+		let doubleBlinkTimer = 0;
+		let targetClientX = window.innerWidth * 0.5;
+		let targetClientY = window.innerHeight * 0.45;
+		let hasPointerSample = false;
+		let shipX = 0;
+		let shipY = 0;
+		let baseX = 0;
+		let baseY = 0;
+
+		const clearBlinkTimers = () => {
+			window.clearTimeout(nextBlinkTimer);
+			window.clearTimeout(openBlinkTimer);
+			window.clearTimeout(doubleBlinkTimer);
+			nextBlinkTimer = 0;
+			openBlinkTimer = 0;
+			doubleBlinkTimer = 0;
+			footer.classList.remove('is-blinking');
+		};
+
+		const canBlink = () =>
+			footerVisible && !document.hidden && !reducedMotion.matches;
+
+		const closeEyes = () => {
+			if (!canBlink()) return;
+			footer.classList.add('is-blinking');
+			openBlinkTimer = window.setTimeout(
+				() => footer.classList.remove('is-blinking'),
+				110,
+			);
+		};
+
+		const scheduleBlink = () => {
+			clearBlinkTimers();
+			if (!canBlink()) return;
+			const delay = 2800 + Math.random() * 3600;
+			nextBlinkTimer = window.setTimeout(() => {
+				closeEyes();
+				if (Math.random() > 0.78) {
+					doubleBlinkTimer = window.setTimeout(closeEyes, 235);
+				}
+				nextBlinkTimer = window.setTimeout(scheduleBlink, 520);
+			}, delay);
+		};
+
+		const restoreCursor = () => {
+			cursorMode = false;
+			beamPending = false;
+			delete footer.dataset.cursorBikeActive;
+			delete document.documentElement.dataset.footerCursorBikeActive;
+			gsap.set(cursorBike, { autoAlpha: 0 });
+			window.clearTimeout(beamTimer);
+			beamTimer = 0;
+			delete ufo.dataset.targetBeam;
+		};
+
+		const stopFrame = () => {
+			window.cancelAnimationFrame(frame);
+			frame = 0;
+		};
+
+		const activateCursorBike = () => {
+			if (
+				cursorMode ||
+				beamPending ||
+				!trackingReady ||
+				!pointerInside ||
+				reducedMotion.matches ||
+				!finePointer.matches
+			)
+				return;
+			beamPending = true;
+			ufo.dataset.targetBeam = '';
+			window.clearTimeout(beamTimer);
+			beamTimer = window.setTimeout(() => {
+				beamPending = false;
+				delete ufo.dataset.targetBeam;
+				cursorMode = true;
+				footer.dataset.cursorBikeActive = '';
+				document.documentElement.dataset.footerCursorBikeActive = '';
+				gsap.set(cursorBike, { autoAlpha: 1 });
+			}, 260);
+		};
+
+		const renderTracking = () => {
+			frame = 0;
+			if (
+				!trackingReady ||
+				!pointerInside ||
+				document.hidden ||
+				reducedMotion.matches ||
+				!finePointer.matches
+			)
+				return;
+
+			const ufoRect = ufo.getBoundingClientRect();
+			const deltaX = targetClientX - (ufoRect.left + ufoRect.width * 0.5);
+			const deltaY = targetClientY - (ufoRect.top + ufoRect.height * 0.5);
+
+			shipX += deltaX * 0.16;
+			shipY += deltaY * 0.16;
+			gsap.set(ufo, { x: shipX, y: shipY, force3D: true });
+			gsap.set(cursorBike, {
+				x: targetClientX,
+				y: targetClientY,
+				force3D: true,
+			});
+
+			if (Math.hypot(deltaX, deltaY) < 8) {
+				activateCursorBike();
+			}
+			frame = window.requestAnimationFrame(renderTracking);
+		};
+
+		const startFrame = () => {
+			if (!frame) frame = window.requestAnimationFrame(renderTracking);
+		};
+
+		const setTrackingReady = (ready: boolean) => {
+			trackingReady = ready && finePointer.matches && !reducedMotion.matches;
+			footer.toggleAttribute(
+				'data-ufo-touch',
+				ready && (!finePointer.matches || reducedMotion.matches),
+			);
+			if (trackingReady && hasPointerSample) {
+				const rect = footer.getBoundingClientRect();
+				pointerInside =
+					targetClientX >= rect.left &&
+					targetClientX <= rect.right &&
+					targetClientY >= rect.top &&
+					targetClientY <= rect.bottom;
+			}
+			if (trackingReady && pointerInside) startFrame();
+			else {
+				stopFrame();
+				restoreCursor();
+			}
+		};
+
+		const handlePointerMove = (event: PointerEvent) => {
+			hasPointerSample = true;
+			targetClientX = event.clientX;
+			targetClientY = event.clientY;
+			const rect = footer.getBoundingClientRect();
+			const isInside =
+				event.clientX >= rect.left &&
+				event.clientX <= rect.right &&
+				event.clientY >= rect.top &&
+				event.clientY <= rect.bottom;
+
+			if (isInside) {
+				pointerInside = true;
+				if (trackingReady) startFrame();
+			} else if (pointerInside) {
+				pointerInside = false;
+				stopFrame();
+				restoreCursor();
+			}
+		};
+
+		const handlePointerOut = (event: PointerEvent) => {
+			if (event.relatedTarget) return;
+			pointerInside = false;
+			stopFrame();
+			restoreCursor();
+		};
+
+		const buildTimeline = () => {
+			context?.revert();
+			baseX = window.innerWidth * (window.innerWidth < 640 ? 0.025 : 0.015);
+			baseY = footer.offsetHeight * (window.innerWidth < 640 ? 0.57 : 0.56);
+			shipX = 0;
+			shipY = 0;
+
+			context = gsap.context(() => {
+				gsap.set(ufo, { x: 0, y: 0 });
+				gsap.set(ufoFlight, {
+					x: window.innerWidth + ufoFlight.offsetWidth,
+					y: footer.offsetHeight * 0.06,
+					rotation: 7,
+				});
+				gsap.set(cursorBike, {
+					autoAlpha: 0,
+					xPercent: -50,
+					yPercent: -50,
+				});
+				gsap.set(beam, {
+					autoAlpha: 0,
+					scaleY: 0.08,
+					transformOrigin: '50% 0%',
+				});
+
+				const timeline = gsap.timeline({
+					defaults: { ease: 'none' },
+					scrollTrigger: {
+						id: 'footer-ufo-abduction',
+						trigger: footer,
+						start: 'top 72%',
+						end: 'top top',
+						scrub: true,
+						invalidateOnRefresh: true,
+						onUpdate: (self) => {
+							const abducted = self.progress > 0.56;
+							guide.toggleAttribute('data-abducted', abducted);
+							setTrackingReady(self.progress > 0.94);
+						},
+						onLeaveBack: () => {
+							delete guide.dataset.abducted;
+							setTrackingReady(false);
+						},
+					},
+				});
+
+				timeline
+					.to(
+						ufoFlight,
+						{
+							x: window.innerWidth * 0.3,
+							y: footer.offsetHeight * 0.08,
+							rotation: 2,
+							duration: 0.34,
+						},
+						0,
+					)
+					.to(
+						ufoFlight,
+						{
+							x: baseX,
+							y: baseY,
+							rotation: -2,
+							duration: 0.22,
+						},
+						0.34,
+					)
+					.to(beam, { autoAlpha: 0.9, scaleY: 1, duration: 0.16 }, 0.5)
+					.to(beam, { autoAlpha: 0, scaleY: 0.9, duration: 0.14 }, 0.7);
+			}, footer);
+		};
+
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				footerVisible = entry.isIntersecting;
+				scheduleBlink();
+				if (!footerVisible) {
+					pointerInside = false;
+					setTrackingReady(false);
+				}
+			},
+			{ threshold: 0.12 },
+		);
+
+		let resizeFrame = 0;
+		const handleResize = () => {
+			window.cancelAnimationFrame(resizeFrame);
+			resizeFrame = window.requestAnimationFrame(() => {
+				restoreCursor();
+				buildTimeline();
+				ScrollTrigger.refresh();
+			});
+		};
+
+		const handleVisibility = () => {
+			scheduleBlink();
+			if (document.hidden) {
+				stopFrame();
+				restoreCursor();
+			} else if (trackingReady && pointerInside) {
+				startFrame();
+			}
+		};
+
+		const cleanup = () => {
+			clearBlinkTimers();
+			stopFrame();
+			restoreCursor();
+			delete guide.dataset.abducted;
+			observer.disconnect();
+			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('pointermove', handlePointerMove);
+			window.removeEventListener('pointerout', handlePointerOut);
+			document.removeEventListener('visibilitychange', handleVisibility);
+			reducedMotion.removeEventListener('change', handleResize);
+			finePointer.removeEventListener('change', handleResize);
+			document.removeEventListener('astro:before-swap', cleanup);
+			window.cancelAnimationFrame(resizeFrame);
+			context?.revert();
+			if (footerWindow.__footerMotionCleanup === cleanup)
+				delete footerWindow.__footerMotionCleanup;
+		};
+
+		buildTimeline();
+		observer.observe(footer);
+		window.addEventListener('resize', handleResize, { passive: true });
+		window.addEventListener('pointermove', handlePointerMove, {
+			passive: true,
+		});
+		window.addEventListener('pointerout', handlePointerOut);
+		document.addEventListener('visibilitychange', handleVisibility);
+		reducedMotion.addEventListener('change', handleResize);
+		finePointer.addEventListener('change', handleResize);
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		footerWindow.__footerMotionCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseFooterMotion();
+</script>
 
 <style>
 	.contact-footer {
-		align-items: end;
-		background: var(--color-surface);
-	}
-
-	nav {
-		inline-size: 100%;
-	}
-
-	ul {
-		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: 1rem;
+		min-block-size: 100vh;
+		min-block-size: 100svh;
+		isolation: isolate;
+		overflow: hidden;
 		padding: 0;
-		margin: 0;
-		list-style: none;
+		background: var(--ink);
 	}
 
-	a,
-	span {
-		display: inline-block;
-		padding-block: 0.5rem;
-		font-size: clamp(1rem, 2vw, 1.25rem);
+	.footer-portrait-frame,
+	.footer-head-shield,
+	.footer-portrait-frame img,
+	.footer-head-shield img,
+	.footer-grade,
+	.eye-overlay {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
 	}
 
-	a {
-		text-underline-offset: 0.25em;
+	.footer-portrait-frame {
+		z-index: 0;
 	}
 
-	@media (max-width: 48rem) {
-		ul {
-			grid-template-columns: 1fr;
+	.footer-portrait-frame img,
+	.footer-head-shield img {
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: center;
+		user-select: none;
+	}
+
+	.footer-portrait-frame--mobile,
+	.footer-head-shield--mobile,
+	.eye-overlay--mobile {
+		display: none;
+	}
+
+	.footer-ufo-flight {
+		position: absolute;
+		z-index: 1;
+		inset: 0 auto auto 0;
+		inline-size: clamp(8.5rem, 16vw, 15rem);
+		pointer-events: none;
+		will-change: transform;
+	}
+
+	.footer-ufo {
+		position: relative;
+		filter: drop-shadow(0.55rem 0.65rem 0 rgb(6 28 56 / 58%));
+		will-change: transform;
+	}
+
+	.footer-ufo svg {
+		position: relative;
+		z-index: 2;
+		display: block;
+		inline-size: 100%;
+		overflow: visible;
+	}
+
+	.ufo-dome {
+		fill: var(--orange);
+		stroke: var(--ink);
+		stroke-width: 9;
+	}
+
+	.ufo-window {
+		fill: var(--cobalt);
+		stroke: var(--cream-light);
+		stroke-width: 5;
+	}
+
+	.ufo-rim {
+		fill: var(--cream-light);
+		stroke: var(--ink);
+		stroke-width: 9;
+		stroke-linejoin: bevel;
+	}
+
+	.ufo-body {
+		fill: var(--red);
+		stroke: var(--ink);
+		stroke-width: 8;
+	}
+
+	.ufo-ink {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 5;
+		stroke-linecap: round;
+	}
+
+	.ufo-light {
+		fill: var(--yellow);
+		stroke: var(--ink);
+		stroke-width: 4;
+	}
+
+	.ufo-beam {
+		position: absolute;
+		z-index: 1;
+		inset-block-start: 62%;
+		inset-inline-start: 18%;
+		inline-size: 64%;
+		block-size: min(62svh, 34rem);
+		background:
+			repeating-linear-gradient(
+				90deg,
+				rgb(255 214 55 / 42%) 0 12%,
+				rgb(244 228 190 / 14%) 12% 22%
+			),
+			linear-gradient(180deg, rgb(255 214 55 / 56%), transparent 88%);
+		clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+		filter: drop-shadow(0 0 0.65rem rgb(255 214 55 / 52%));
+		pointer-events: none;
+	}
+
+	.footer-ufo[data-target-beam] .ufo-beam {
+		animation: target-beam-pulse 260ms ease-out both;
+	}
+
+	.footer-head-shield {
+		z-index: 2;
+		clip-path: ellipse(20% 46% at 32% 29%);
+		pointer-events: none;
+	}
+
+	.footer-grade {
+		z-index: 3;
+		background:
+			linear-gradient(180deg, rgb(6 28 56 / 4%) 42%, rgb(6 28 56 / 92%) 100%),
+			linear-gradient(
+				90deg,
+				transparent 35%,
+				rgb(6 28 56 / 16%) 58%,
+				rgb(6 28 56 / 62%) 100%
+			);
+		pointer-events: none;
+	}
+
+	.eye-overlay {
+		z-index: 4;
+		max-inline-size: none;
+		overflow: hidden;
+		pointer-events: none;
+	}
+
+	.eye-lids {
+		opacity: 0;
+		transition: opacity 90ms ease-out;
+	}
+
+	.contact-footer.is-blinking .eye-lids {
+		opacity: 1;
+		transition-duration: 45ms;
+		transition-timing-function: ease-in;
+	}
+
+	.footer-ink-stripe {
+		position: absolute;
+		z-index: 5;
+		inset-inline: 0;
+		inset-block-end: 0;
+		block-size: clamp(0.65rem, 1.2vw, 1.2rem);
+		background: linear-gradient(
+			90deg,
+			var(--red) 0 18%,
+			var(--yellow) 18% 23%,
+			var(--orange) 23% 54%,
+			var(--cobalt) 54% 82%,
+			var(--cream-light) 82%
+		);
+	}
+
+	.footer-cursor-bike {
+		position: fixed;
+		z-index: 900;
+		inset: 0 auto auto 0;
+		inline-size: clamp(2.8rem, 4.5vw, 4.4rem);
+		opacity: 0;
+		pointer-events: none;
+		filter: drop-shadow(0.18rem 0.22rem 0 var(--ink));
+		will-change: transform;
+	}
+
+	:global(html[data-footer-cursor-bike-active]),
+	:global(html[data-footer-cursor-bike-active] *) {
+		cursor: none;
+	}
+
+	.contact-footer[data-ufo-touch] .footer-ufo {
+		animation: ufo-touch-hover 2.4s ease-in-out infinite;
+	}
+
+	@keyframes target-beam-pulse {
+		0% {
+			opacity: 0;
+			transform: scaleY(0.2);
+		}
+		38% {
+			opacity: 0.92;
+			transform: scaleY(1);
+		}
+		100% {
+			opacity: 0;
+			transform: scaleY(0.92);
+		}
+	}
+
+	@keyframes ufo-touch-hover {
+		0%,
+		100% {
+			transform: translate3d(0, 0, 0) rotate(-1deg);
+		}
+		50% {
+			transform: translate3d(0, 5px, 0) rotate(1deg);
+		}
+	}
+
+	@media (max-width: 56rem) {
+		.footer-portrait-frame--desktop,
+		.footer-head-shield--desktop,
+		.eye-overlay--desktop {
+			display: none;
+		}
+
+		.footer-portrait-frame--mobile,
+		.footer-head-shield--mobile,
+		.eye-overlay--mobile {
+			display: block;
+		}
+
+		.footer-head-shield--mobile {
+			clip-path: ellipse(45% 43% at 54% 31%);
+		}
+
+		.footer-grade {
+			background: linear-gradient(
+				180deg,
+				transparent 38%,
+				rgb(6 28 56 / 92%) 100%
+			);
+		}
+
+		.footer-ufo-flight {
+			inline-size: clamp(8.5rem, 44vw, 11rem);
+		}
+
+		.footer-cursor-bike {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.eye-lids {
+			display: none;
+		}
+
+		.footer-ufo,
+		.footer-ufo[data-target-beam] .ufo-beam {
+			animation: none;
 		}
 	}
 </style>

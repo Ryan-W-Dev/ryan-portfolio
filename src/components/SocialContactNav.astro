@@ -1,0 +1,333 @@
+---
+interface Contact {
+	label: string;
+	icon: 'email' | 'github' | 'linkedin' | 'telegram' | 'whatsapp';
+	href: string;
+}
+
+const contacts: Contact[] = [
+	{
+		label: 'Email',
+		icon: 'email',
+		href: 'mailto:ryan.james.wynn@gmail.com',
+	},
+	{ label: 'GitHub', icon: 'github', href: 'https://github.com/Ryan-W-Dev' },
+	{
+		label: 'LinkedIn',
+		icon: 'linkedin',
+		href: 'https://www.linkedin.com/in/ryan-wynn-01a784403/',
+	},
+	{ label: 'Telegram', icon: 'telegram', href: 'https://t.me/ryanwynn4' },
+	{
+		label: 'WhatsApp',
+		icon: 'whatsapp',
+		href: 'https://wa.me/971508114541',
+	},
+];
+---
+
+<nav class="social-flight" data-social-flight aria-label="Contact Ryan Wynn">
+	<ul class="contact-list">
+		{
+			contacts.map((contact) => (
+				<li>
+					<a
+						class="contact-item"
+						href={contact.href}
+						target={contact.href.startsWith('mailto:') ? undefined : '_blank'}
+						rel={
+							contact.href.startsWith('mailto:')
+								? undefined
+								: 'noopener noreferrer'
+						}
+						aria-label={
+							contact.href.startsWith('mailto:')
+								? `Email ${contact.label === 'Email' ? 'Ryan Wynn' : contact.label}`
+								: `${contact.label} — opens in a new tab`
+						}
+					>
+						<span class="contact-icon" aria-hidden="true">
+							{contact.icon === 'email' && (
+								<svg viewBox="0 0 24 24">
+									<path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2Zm13.8 2.5-7 5.2-7-5.2V17h14V9.5Z" />
+								</svg>
+							)}
+							{contact.icon === 'github' && (
+								<svg viewBox="0 0 24 24">
+									<path d="M12 2.5a9.6 9.6 0 0 0-3 18.7c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.7-1.3-2.2-.3-4.6-1.1-4.6-4.8 0-1.1.4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 4.9 0c1.8-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.6.7 1 1.5 1 2.6 0 3.7-2.3 4.5-4.6 4.8.4.3.7.9.7 1.8v2.7c0 .4.2.6.7.5A9.6 9.6 0 0 0 12 2.5Z" />
+								</svg>
+							)}
+							{contact.icon === 'linkedin' && (
+								<svg viewBox="0 0 24 24">
+									<path d="M5.2 8.3H1.8V19h3.4V8.3Zm.2-3.4A2 2 0 1 0 1.5 5a2 2 0 0 0 3.9 0ZM22 12.9c0-3.2-1.7-4.9-4-4.9-1.9 0-2.7 1-3.1 1.8V8.3h-3.4V19h3.4v-5.3c0-1.4.3-2.8 2.1-2.8 1.8 0 1.8 1.7 1.8 2.9V19H22v-6.1Z" />
+								</svg>
+							)}
+							{contact.icon === 'telegram' && (
+								<svg viewBox="0 0 24 24">
+									<path d="m21.5 3.7-3 16c-.2 1.1-.9 1.4-1.8.9l-4.6-3.4-2.2 2.2c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.6 13.9 2 12.4c-1-.3-1-1 .2-1.5l18-6.9c.8-.3 1.6.2 1.3 1.7Z" />
+								</svg>
+							)}
+							{contact.icon === 'whatsapp' && (
+								<svg viewBox="0 0 24 24">
+									<path d="M12 2.4a9.5 9.5 0 0 0-8.1 14.4l-1.3 4.8 4.9-1.3A9.6 9.6 0 1 0 12 2.4Zm0 17.5c-1.5 0-2.9-.4-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A7.9 7.9 0 1 1 12 19.9Zm4.4-5.9c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.6.8-.8 1-.1.2-.3.2-.5.1-1.4-.7-2.4-1.3-3.3-2.9-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-.8-2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.2-1.2-.2-.2-.4-.3-.6-.4Z" />
+								</svg>
+							)}
+						</span>
+						<span class="contact-label">{contact.label}</span>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+</nav>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
+
+	const socialWindow = window as Window & {
+		__socialFlightCleanup?: () => void;
+	};
+	socialWindow.__socialFlightCleanup?.();
+
+	const initialiseSocialFlight = () => {
+		const nav = document.querySelector<HTMLElement>('[data-social-flight]');
+		const hero = document.querySelector<HTMLElement>('[data-arrival-scene]');
+		const footer = document.querySelector<HTMLElement>('[data-contact-footer]');
+		const labels = nav
+			? Array.from(nav.querySelectorAll<HTMLElement>('.contact-label'))
+			: [];
+
+		if (!nav || !hero || !footer || labels.length === 0) return;
+
+		let context: gsap.Context | undefined;
+		let resizeFrame = 0;
+
+		const build = () => {
+			context?.revert();
+			const compactWidth = nav.offsetWidth;
+			const heroX = Math.max(12, window.innerWidth - compactWidth - 24);
+			const headerX = Math.max(0, (window.innerWidth - compactWidth) / 2);
+			const heroY = Math.max(0, window.innerHeight - nav.offsetHeight - 42);
+			const footerY = Math.max(
+				0,
+				window.innerHeight - (window.innerWidth < 640 ? 164 : 84),
+			);
+			const footerWidth = Math.min(window.innerWidth - 24, 820);
+			const footerX = Math.max(0, (window.innerWidth - footerWidth) / 2);
+
+			context = gsap.context(() => {
+				gsap.set(nav, { x: heroX, y: heroY, scale: 1, width: 'auto' });
+				gsap.set(labels, { autoAlpha: 0, maxWidth: 0, marginInlineStart: 0 });
+
+				gsap.to(nav, {
+					x: headerX,
+					y: 0,
+					scale: 0.88,
+					ease: 'none',
+					scrollTrigger: {
+						id: 'social-hero-to-header',
+						trigger: hero,
+						start: 'top top',
+						end: 'bottom top',
+						scrub: true,
+						invalidateOnRefresh: true,
+					},
+				});
+
+				const footerTimeline = gsap.timeline({
+					defaults: { ease: 'none' },
+					scrollTrigger: {
+						id: 'social-header-to-footer',
+						trigger: footer,
+						start: 'top 42%',
+						end: 'top top',
+						scrub: true,
+						invalidateOnRefresh: true,
+						onEnter: () => {
+							nav.dataset.footerMode = '';
+						},
+						onLeaveBack: () => {
+							delete nav.dataset.footerMode;
+						},
+						onRefresh: (self) => {
+							nav.toggleAttribute('data-footer-mode', self.progress > 0);
+						},
+					},
+				});
+
+				footerTimeline
+					.to(nav, { x: footerX, y: footerY, scale: 1, width: footerWidth }, 0)
+					.to(
+						labels,
+						{ autoAlpha: 1, maxWidth: 116, marginInlineStart: 8 },
+						0.12,
+					);
+			}, nav);
+		};
+
+		const handleResize = () => {
+			window.cancelAnimationFrame(resizeFrame);
+			resizeFrame = window.requestAnimationFrame(() => {
+				build();
+				ScrollTrigger.refresh();
+			});
+		};
+		const handleIntroComplete = () => {
+			window.cancelAnimationFrame(resizeFrame);
+			resizeFrame = window.requestAnimationFrame(() => {
+				resizeFrame = window.requestAnimationFrame(() => {
+					build();
+					ScrollTrigger.refresh();
+				});
+			});
+		};
+
+		const cleanup = () => {
+			window.removeEventListener('resize', handleResize);
+			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
+			document.removeEventListener('astro:before-swap', cleanup);
+			window.cancelAnimationFrame(resizeFrame);
+			context?.revert();
+			if (socialWindow.__socialFlightCleanup === cleanup) {
+				delete socialWindow.__socialFlightCleanup;
+			}
+		};
+
+		build();
+		window.addEventListener('resize', handleResize, { passive: true });
+		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
+			once: true,
+		});
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		socialWindow.__socialFlightCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseSocialFlight();
+</script>
+
+<style>
+	.social-flight {
+		position: fixed;
+		z-index: 700;
+		inset-block-start: 1rem;
+		inset-inline-start: 0;
+		inline-size: max-content;
+		padding: 0.55rem;
+		background: var(--ink);
+		box-shadow: 0.35rem 0.35rem 0 var(--red);
+		clip-path: polygon(
+			0.65rem 0,
+			100% 0,
+			100% calc(100% - 0.65rem),
+			calc(100% - 0.65rem) 100%,
+			0 100%,
+			0 0.65rem
+		);
+		will-change: transform, width;
+	}
+
+	.contact-list {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		padding: 0;
+		margin: 0;
+		list-style: none;
+	}
+
+	.contact-item {
+		display: flex;
+		min-inline-size: 2.75rem;
+		min-block-size: 2.75rem;
+		align-items: center;
+		justify-content: center;
+		padding: 0.55rem;
+		border: 2px solid rgb(244 228 190 / 34%);
+		background: var(--cobalt);
+		color: var(--cream-light);
+		text-decoration: none;
+		transition:
+			background-color 140ms ease,
+			color 140ms ease,
+			transform 140ms ease;
+	}
+
+	a.contact-item:hover,
+	a.contact-item:focus-visible {
+		background: var(--red);
+		color: var(--cream-light);
+		transform: translateY(-2px);
+	}
+
+	a.contact-item:focus-visible {
+		outline: 0.2rem solid var(--yellow);
+		outline-offset: 0.16rem;
+	}
+
+	a.contact-item:active {
+		transform: translateY(1px);
+	}
+
+	.contact-icon {
+		flex: none;
+		inline-size: 1.35rem;
+		block-size: 1.35rem;
+	}
+
+	.contact-icon svg {
+		inline-size: 100%;
+		block-size: 100%;
+		fill: currentColor;
+	}
+
+	.contact-label {
+		overflow: hidden;
+		max-inline-size: 0;
+		margin-inline-start: 0;
+		opacity: 0;
+		font-size: 0.8rem;
+		font-weight: 900;
+		letter-spacing: 0.065em;
+		line-height: 1;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 40rem) {
+		.social-flight {
+			inset-block-start: 0.7rem;
+			padding: 0.4rem;
+			box-shadow: 0.25rem 0.25rem 0 var(--red);
+		}
+
+		.contact-list {
+			gap: 0.25rem;
+		}
+
+		.social-flight[data-footer-mode] .contact-list {
+			flex-wrap: wrap;
+		}
+
+		.contact-item {
+			min-inline-size: 2.75rem;
+			min-block-size: 2.75rem;
+			padding: 0.5rem;
+		}
+
+		.contact-label {
+			font-size: 0.72rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.contact-item {
+			transition: none;
+		}
+	}
+</style>

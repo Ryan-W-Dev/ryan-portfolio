@@ -1,0 +1,295 @@
+---
+import DirtBikeArtwork from './DirtBikeArtwork.astro';
+---
+
+<div class="dirt-bike-guide" data-dirt-bike-guide aria-hidden="true">
+	<DirtBikeArtwork />
+</div>
+
+<script>
+	import { gsap } from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+	gsap.registerPlugin(ScrollTrigger);
+
+	interface RoutePoint {
+		progress: number;
+		x: number;
+		y: number;
+		rotation: number;
+	}
+
+	interface VisibilityRange {
+		hideStart: number;
+		hideEnd: number;
+		showStart: number;
+		showEnd: number;
+	}
+
+	const bikeWindow = window as Window & { __dirtBikeCleanup?: () => void };
+	bikeWindow.__dirtBikeCleanup?.();
+
+	const initialiseDirtBike = () => {
+		const guide = document.querySelector<HTMLElement>('[data-dirt-bike-guide]');
+		const wheels = guide
+			? Array.from(guide.querySelectorAll<SVGGElement>('[data-bike-wheel]'))
+			: [];
+		const suspension = guide?.querySelector<SVGGElement>(
+			'[data-bike-suspension]',
+		);
+		const hero = document.querySelector<HTMLElement>('[data-arrival-scene]');
+		const transition = document.querySelector<HTMLElement>(
+			'[data-transition-copy-scene]',
+		);
+		const visorSequence = document.querySelector<HTMLElement>(
+			'[data-visor-sequence]',
+		);
+		const footer = document.querySelector<HTMLElement>('[data-contact-footer]');
+		if (
+			!guide ||
+			wheels.length !== 2 ||
+			!suspension ||
+			!hero ||
+			!transition ||
+			!visorSequence ||
+			!footer
+		)
+			return;
+
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let trigger: ScrollTrigger | undefined;
+		let resizeFrame = 0;
+		let route: RoutePoint[] = [];
+		let visibilityRange: VisibilityRange = {
+			hideStart: 0,
+			hideEnd: 0,
+			showStart: 1,
+			showEnd: 1,
+		};
+
+		const clamp = (value: number) => Math.max(0, Math.min(1, value));
+		const interpolate = (start: number, end: number, amount: number) =>
+			start + (end - start) * amount;
+		const documentTop = (element: HTMLElement) =>
+			element.getBoundingClientRect().top + window.scrollY;
+
+		const buildRoute = () => {
+			const maximum = Math.max(1, ScrollTrigger.maxScroll(window));
+			const at = (element: HTMLElement, ratio: number) =>
+				clamp((documentTop(element) + element.offsetHeight * ratio) / maximum);
+			const sequenceTop = documentTop(visorSequence);
+			const sequenceTravel = Math.max(
+				window.innerHeight,
+				visorSequence.offsetHeight - window.innerHeight,
+			);
+			const inSequence = (ratio: number) =>
+				clamp((sequenceTop + sequenceTravel * ratio) / maximum);
+			const visorTimeline = ScrollTrigger.getById('extreme-card-visor-sequence')
+				?.animation as gsap.core.Timeline | undefined;
+			const visorDuration = visorTimeline?.duration() ?? 1;
+			const visorHandoffRatio = clamp(
+				(visorTimeline?.labels['visor-handoff'] ?? visorDuration * 0.67) /
+					visorDuration,
+			);
+			const rockResolveRatio = clamp(
+				(visorTimeline?.labels['rock-face-resolve'] ?? visorDuration * 0.95) /
+					visorDuration,
+			);
+
+			const leftLane = window.innerWidth < 640 ? 0.025 : 0.045;
+			const bottomLane = window.innerWidth < 640 ? 0.9 : 0.91;
+
+			route = [
+				{ progress: 0, x: leftLane, y: 0.14, rotation: 90 },
+				{ progress: at(hero, 0.16), x: leftLane, y: 0.22, rotation: 90 },
+				{ progress: at(hero, 0.86), x: leftLane, y: 0.72, rotation: 90 },
+				{ progress: at(transition, 0.42), x: leftLane, y: 0.74, rotation: 90 },
+				{ progress: at(transition, 0.72), x: 0.055, y: 0.83, rotation: 58 },
+				{ progress: at(transition, 0.96), x: 0.13, y: bottomLane, rotation: 0 },
+				{ progress: inSequence(0.08), x: 0.13, y: bottomLane, rotation: 0 },
+				{
+					progress: inSequence(Math.max(0.1, visorHandoffRatio - 0.05)),
+					x: 0.88,
+					y: bottomLane,
+					rotation: 0,
+				},
+				{
+					progress: inSequence(visorHandoffRatio),
+					x: 0.88,
+					y: bottomLane,
+					rotation: 0,
+				},
+				{
+					progress: inSequence(visorHandoffRatio + 0.04),
+					x: leftLane,
+					y: 0.56,
+					rotation: 90,
+				},
+				{
+					progress: inSequence(Math.min(0.99, rockResolveRatio + 0.02)),
+					x: leftLane,
+					y: 0.52,
+					rotation: 90,
+				},
+				{ progress: at(footer, 0.12), x: leftLane, y: 0.72, rotation: 90 },
+				{ progress: 1, x: leftLane, y: 0.72, rotation: 90 },
+			].sort((a, b) => a.progress - b.progress);
+
+			visibilityRange = {
+				hideStart: inSequence(Math.max(0, visorHandoffRatio - 0.04)),
+				hideEnd: inSequence(visorHandoffRatio),
+				showStart: inSequence(rockResolveRatio + (1 - rockResolveRatio) * 0.82),
+				showEnd: inSequence(1),
+			};
+		};
+
+		const visibilityAt = (progress: number) => {
+			const { hideStart, hideEnd, showStart, showEnd } = visibilityRange;
+			if (progress < hideStart) return 1;
+			if (progress < hideEnd) {
+				return (
+					1 - (progress - hideStart) / Math.max(hideEnd - hideStart, 0.001)
+				);
+			}
+			if (progress < showStart) return 0;
+			if (progress < showEnd) {
+				return (progress - showStart) / Math.max(showEnd - showStart, 0.001);
+			}
+			return 1;
+		};
+
+		const render = (progress: number) => {
+			let from = route[0];
+			let to = route[route.length - 1];
+
+			for (let index = 0; index < route.length - 1; index += 1) {
+				if (
+					progress >= route[index].progress &&
+					progress <= route[index + 1].progress
+				) {
+					from = route[index];
+					to = route[index + 1];
+					break;
+				}
+			}
+
+			const segmentProgress = clamp(
+				(progress - from.progress) /
+					Math.max(to.progress - from.progress, 0.001),
+			);
+			const guideWidth = guide.offsetWidth;
+			const guideHeight = guide.offsetHeight;
+			const x =
+				interpolate(from.x, to.x, segmentProgress) *
+				(window.innerWidth - guideWidth);
+			const y =
+				interpolate(from.y, to.y, segmentProgress) *
+				(window.innerHeight - guideHeight);
+			const rotation = interpolate(from.rotation, to.rotation, segmentProgress);
+			const suspensionOffset = Math.sin(progress * Math.PI * 18) * 2.5;
+
+			const abducted = guide.hasAttribute('data-abducted');
+			gsap.set(guide, {
+				x,
+				y,
+				rotation,
+				opacity: abducted ? 0 : visibilityAt(progress),
+				force3D: true,
+			});
+			gsap.set(wheels, {
+				rotation: progress * 2160,
+				transformOrigin: '50% 50%',
+			});
+			gsap.set(suspension, { y: suspensionOffset });
+		};
+
+		const build = () => {
+			trigger?.kill();
+			buildRoute();
+			if (reducedMotion.matches) {
+				guide.dataset.reducedMotion = '';
+				gsap.set(guide, {
+					x: 18,
+					y: window.innerHeight * 0.62,
+					rotation: 90,
+					opacity: 0.7,
+				});
+				gsap.set([wheels, suspension], { clearProps: 'transform' });
+				return;
+			}
+
+			delete guide.dataset.reducedMotion;
+			trigger = ScrollTrigger.create({
+				id: 'dirt-bike-page-guide',
+				start: 0,
+				end: () => Math.max(1, ScrollTrigger.maxScroll(window)),
+				onUpdate: (self) => render(self.progress),
+				onRefresh: (self) => {
+					buildRoute();
+					render(self.progress);
+				},
+			});
+			render(trigger.progress);
+		};
+
+		const handleAbductionState = () => {
+			if (trigger) render(trigger.progress);
+		};
+		const abductionObserver = new MutationObserver(handleAbductionState);
+
+		const handleResize = () => {
+			window.cancelAnimationFrame(resizeFrame);
+			resizeFrame = window.requestAnimationFrame(build);
+		};
+
+		const cleanup = () => {
+			window.removeEventListener('resize', handleResize);
+			reducedMotion.removeEventListener('change', build);
+			abductionObserver.disconnect();
+			document.removeEventListener('astro:before-swap', cleanup);
+			window.cancelAnimationFrame(resizeFrame);
+			trigger?.kill();
+			gsap.set([guide, wheels, suspension], { clearProps: 'all' });
+			if (bikeWindow.__dirtBikeCleanup === cleanup)
+				delete bikeWindow.__dirtBikeCleanup;
+		};
+
+		build();
+		abductionObserver.observe(guide, {
+			attributes: true,
+			attributeFilter: ['data-abducted'],
+		});
+		window.addEventListener('resize', handleResize, { passive: true });
+		reducedMotion.addEventListener('change', build);
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		bikeWindow.__dirtBikeCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseDirtBike();
+</script>
+
+<style>
+	.dirt-bike-guide {
+		position: fixed;
+		z-index: 640;
+		inset-block-start: 0;
+		inset-inline-start: 0;
+		inline-size: clamp(4.6rem, 7vw, 7rem);
+		filter: drop-shadow(0.22rem 0.28rem 0 rgb(6 28 56 / 38%));
+		opacity: 1;
+		pointer-events: none;
+		will-change: transform;
+	}
+
+	.dirt-bike-guide[data-reduced-motion] {
+		opacity: 0.7;
+		will-change: auto;
+	}
+
+	@media (max-width: 40rem) {
+		.dirt-bike-guide {
+			inline-size: 4.4rem;
+		}
+	}
+</style>

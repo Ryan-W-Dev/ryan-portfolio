@@ -15,10 +15,27 @@ const { title, description } = Astro.props;
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="description" content={description} />
+		<meta name="theme-color" content="#061c38" />
 		<meta name="generator" content={Astro.generator} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content="website" />
+		<link
+			rel="preload"
+			as="image"
+			href="/assets/freefall/freefall-environment.webp"
+			fetchpriority="high"
+		/>
+		<link
+			rel="preload"
+			as="image"
+			href="/assets/hero/hero-desert.webp"
+			fetchpriority="high"
+		/>
 		<title>{title}</title>
 	</head>
 	<body>
+		<a class="skip-link" href="#main-content">Skip to content</a>
 		<slot />
 	</body>
 </html>
