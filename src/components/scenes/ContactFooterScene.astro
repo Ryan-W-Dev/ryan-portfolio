@@ -97,8 +97,7 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		const cursorBike = document.querySelector<HTMLElement>(
 			'[data-footer-cursor-bike]',
 		);
-		const guide = document.querySelector<HTMLElement>('[data-dirt-bike-guide]');
-		if (!footer || !cursorBike || !guide) return;
+		if (!footer || !cursorBike) return;
 
 		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 		const finePointer = window.matchMedia('(pointer: fine)');
@@ -152,9 +151,7 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 
 		const restoreCursor = () => {
 			cursorMode = false;
-			delete footer.dataset.cursorBikeActive;
 			delete document.documentElement.dataset.footerCursorBikeActive;
-			delete guide.dataset.footerCursorActive;
 			gsap.set(cursorBike, { autoAlpha: 0 });
 		};
 
@@ -173,9 +170,7 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 			)
 				return;
 			cursorMode = true;
-			footer.dataset.cursorBikeActive = '';
 			document.documentElement.dataset.footerCursorBikeActive = '';
-			guide.dataset.footerCursorActive = '';
 			gsap.set(cursorBike, {
 				autoAlpha: 1,
 				x: targetClientX,
@@ -424,6 +419,11 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		pointer-events: none;
 		filter: drop-shadow(0.18rem 0.22rem 0 var(--ink));
 		will-change: transform;
+	}
+
+	:global(html:not([data-footer-cursor-bike-active])) .footer-cursor-bike {
+		opacity: 0 !important;
+		visibility: hidden !important;
 	}
 
 	:global(html[data-footer-cursor-bike-active]),

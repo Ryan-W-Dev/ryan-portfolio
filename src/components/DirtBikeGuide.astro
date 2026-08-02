@@ -22,8 +22,6 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 	interface VisibilityRange {
 		hideStart: number;
 		hideEnd: number;
-		showStart: number;
-		showEnd: number;
 	}
 
 	const bikeWindow = window as Window & { __dirtBikeCleanup?: () => void };
@@ -63,8 +61,6 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		let visibilityRange: VisibilityRange = {
 			hideStart: 0,
 			hideEnd: 0,
-			showStart: 1,
-			showEnd: 1,
 		};
 
 		const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -138,24 +134,18 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			visibilityRange = {
 				hideStart: inSequence(Math.max(0, visorHandoffRatio - 0.04)),
 				hideEnd: inSequence(visorHandoffRatio),
-				showStart: inSequence(rockResolveRatio + (1 - rockResolveRatio) * 0.82),
-				showEnd: inSequence(1),
 			};
 		};
 
 		const visibilityAt = (progress: number) => {
-			const { hideStart, hideEnd, showStart, showEnd } = visibilityRange;
+			const { hideStart, hideEnd } = visibilityRange;
 			if (progress < hideStart) return 1;
 			if (progress < hideEnd) {
 				return (
 					1 - (progress - hideStart) / Math.max(hideEnd - hideStart, 0.001)
 				);
 			}
-			if (progress < showStart) return 0;
-			if (progress < showEnd) {
-				return (progress - showStart) / Math.max(showEnd - showStart, 0.001);
-			}
-			return 1;
+			return 0;
 		};
 
 		const render = (progress: number) => {
@@ -188,14 +178,26 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			const rotation = interpolate(from.rotation, to.rotation, segmentProgress);
 			const suspensionOffset = Math.sin(progress * Math.PI * 18) * 2.5;
 
-			const footerCursorActive = guide.hasAttribute(
-				'data-footer-cursor-active',
+			const footerCursorActive = document.documentElement.hasAttribute(
+				'data-footer-cursor-bike-active',
 			);
+			const opacity = footerCursorActive ? 0 : visibilityAt(progress);
+
+			if (reducedMotion.matches) {
+				gsap.set(guide, {
+					x: 18,
+					y: window.innerHeight * 0.62,
+					rotation: 90,
+					opacity: opacity * 0.7,
+				});
+				return;
+			}
+
 			gsap.set(guide, {
 				x,
 				y,
 				rotation,
-				opacity: footerCursorActive ? 0 : visibilityAt(progress),
+				opacity,
 				force3D: true,
 			});
 			gsap.set(wheels, {
@@ -210,17 +212,9 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			buildRoute();
 			if (reducedMotion.matches) {
 				guide.dataset.reducedMotion = '';
-				gsap.set(guide, {
-					x: 18,
-					y: window.innerHeight * 0.62,
-					rotation: 90,
-					opacity: 0.7,
-				});
 				gsap.set([wheels, suspension], { clearProps: 'transform' });
-				return;
-			}
+			} else delete guide.dataset.reducedMotion;
 
-			delete guide.dataset.reducedMotion;
 			trigger = ScrollTrigger.create({
 				id: 'dirt-bike-page-guide',
 				start: 0,
@@ -257,9 +251,9 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		};
 
 		build();
-		footerCursorObserver.observe(guide, {
+		footerCursorObserver.observe(document.documentElement, {
 			attributes: true,
-			attributeFilter: ['data-footer-cursor-active'],
+			attributeFilter: ['data-footer-cursor-bike-active'],
 		});
 		window.addEventListener('resize', handleResize, { passive: true });
 		reducedMotion.addEventListener('change', build);
@@ -287,6 +281,10 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 	.dirt-bike-guide[data-reduced-motion] {
 		opacity: 0.7;
 		will-change: auto;
+	}
+
+	:global(html[data-footer-cursor-bike-active]) .dirt-bike-guide {
+		opacity: 0 !important;
 	}
 
 	@media (max-width: 40rem) {
