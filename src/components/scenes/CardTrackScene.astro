@@ -208,6 +208,7 @@ const cards = [
 
 	@media (max-width: 40rem) {
 		.extreme-card {
+			block-size: min(60svh, calc(var(--card-inline-size) * 1.18));
 			clip-path: polygon(
 				0 0,
 				calc(100% - 1.25rem) 0,
@@ -219,6 +220,28 @@ const cards = [
 			box-shadow:
 				0.45rem 0.45rem 0 var(--red),
 				0.7rem 0.7rem 0 var(--ink);
+		}
+
+		.extreme-card--1 .card-artwork {
+			object-position: 15% center;
+		}
+
+		.extreme-card--2 .card-artwork {
+			object-position: left center;
+		}
+
+		.extreme-card--3 .card-artwork {
+			object-position: 100% center;
+		}
+
+		.extreme-card--4 .card-artwork,
+		.extreme-card--5 .card-artwork,
+		.extreme-card--6 .card-artwork {
+			object-position: 60% center;
+		}
+
+		.card-artwork {
+			block-size: 60%;
 		}
 
 		h2 {
