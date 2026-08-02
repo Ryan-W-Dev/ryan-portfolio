@@ -109,7 +109,29 @@ const contacts: Contact[] = [
 		const build = () => {
 			context?.revert();
 			const compactWidth = nav.offsetWidth;
-			const heroX = Math.max(12, window.innerWidth - compactWidth - 24);
+			const navStyles = window.getComputedStyle(nav);
+			const safeInlineStart =
+				Number.parseFloat(
+					navStyles.getPropertyValue('--contact-safe-inline-start'),
+				) || 0;
+			const safeInlineEnd =
+				Number.parseFloat(
+					navStyles.getPropertyValue('--contact-safe-inline-end'),
+				) || 0;
+			const mobileHero = window.matchMedia('(max-width: 40rem)').matches;
+			const centeredHeroX = (window.innerWidth - compactWidth) / 2;
+			const minimumHeroX = safeInlineStart + 12;
+			const maximumHeroX = Math.max(
+				minimumHeroX,
+				window.innerWidth - safeInlineEnd - compactWidth - 12,
+			);
+			const mobileHeroX = Math.min(
+				Math.max(centeredHeroX, minimumHeroX),
+				maximumHeroX,
+			);
+			const heroX = mobileHero
+				? mobileHeroX
+				: Math.max(12, window.innerWidth - compactWidth - 24);
 			const headerX = Math.max(0, (window.innerWidth - compactWidth) / 2);
 			const heroY = Math.max(0, window.innerHeight - nav.offsetHeight - 42);
 			const navBlockStart =
@@ -223,6 +245,9 @@ const contacts: Contact[] = [
 
 <style>
 	.social-flight {
+		--contact-safe-inline-start: env(safe-area-inset-left, 0px);
+		--contact-safe-inline-end: env(safe-area-inset-right, 0px);
+
 		position: fixed;
 		z-index: 700;
 		inset-block-start: 1rem;
