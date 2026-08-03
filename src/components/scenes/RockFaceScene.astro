@@ -18,7 +18,11 @@
 
 	<p id="about-statement" data-about-statement data-about-panel>
 		<span data-about-copy
-			>I like my sports extreme and my websites anything but ordinary.</span
+			>I bring that same energy to every project. Combining creativity,
+			thoughtful development, and attention to detail to build digital
+			experiences that feel as good as they perform. I’m open to full time
+			roles, contract work, and collaborations with people who want to create
+			something memorable. If that sounds like your team or project, let’s talk.</span
 		>
 	</p>
 </section>
@@ -94,12 +98,18 @@
 		font-weight: 900;
 		line-height: 0.9;
 		letter-spacing: -0.025em;
-		text-transform: uppercase;
 		transform: rotate(-1.2deg);
 	}
 
 	p span {
 		display: block;
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: clamp(1.25rem, min(1.8vw, 2.7vh), 2rem);
+		font-weight: 600;
+		line-height: 1.45;
+		letter-spacing: 0.01em;
+		text-align: left;
+		text-transform: none;
 	}
 
 	@media (max-width: 48rem) {
@@ -125,6 +135,10 @@
 			max-inline-size: min(12ch, calc(100vw - 3rem));
 			margin: 0 0 clamp(1.2rem, 7vh, 4rem);
 			font-size: clamp(2.6rem, 11.2vw, 4.5rem);
+		}
+
+		p span {
+			font-size: clamp(1rem, min(4.8vw, 2.8vh), 1.35rem);
 		}
 	}
 </style>
