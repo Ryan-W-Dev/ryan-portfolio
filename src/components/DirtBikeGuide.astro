@@ -313,6 +313,7 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			const footerCursorActive = document.documentElement.hasAttribute(
 				'data-footer-cursor-bike-active',
 			);
+			// The shared document state makes the guide/cursor bike handoff mutually exclusive.
 			const opacity = footerCursorActive ? 0 : visibilityAt(progress);
 
 			if (reducedMotion.matches) {

@@ -7,6 +7,9 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const site = Astro.site ?? Astro.url;
+const canonicalUrl = new URL(Astro.url.pathname, site);
+const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 ---
 
 <!doctype html>
@@ -20,6 +23,20 @@ const { title, description } = Astro.props;
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:site_name" content="Ryan Wynn" />
+		<meta property="og:image" content={socialImageUrl} />
+		<meta property="og:image:width" content="1920" />
+		<meta property="og:image:height" content="1080" />
+		<meta
+			property="og:image:alt"
+			content="Ryan Wynn extreme-sports portfolio artwork"
+		/>
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={socialImageUrl} />
+		<link rel="canonical" href={canonicalUrl} />
 		<link rel="icon" href="/favicon.ico" sizes="any" />
 		<link
 			rel="preload"

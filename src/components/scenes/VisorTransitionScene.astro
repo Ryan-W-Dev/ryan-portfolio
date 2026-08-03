@@ -237,6 +237,7 @@ import RockFaceScene from './RockFaceScene.astro';
 				rockFaceResolveDistance;
 			const totalScrollDistance =
 				travelDistance + settleDistance + transitionDistance;
+			// This inert tween turns pinned scroll distance into the reversible final-card hold.
 			const settleState = { progress: 0 };
 			const goggleGeometry = responsiveGoggleGeometry();
 			const aboutPanelRevealStart = `${VISOR_PASS_THROUGH_LABEL}+=${visorPassThroughDistance * ABOUT_PANEL_TIMING.delay}`;

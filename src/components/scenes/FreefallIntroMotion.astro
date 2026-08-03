@@ -247,6 +247,7 @@
 			};
 
 			const clock = { elapsed: 0 };
+			// Establish the shared pass origin before the first-paint gate reveals the world.
 			renderPasses(0);
 
 			timeline = gsap.timeline({ paused: true, onComplete: complete });
