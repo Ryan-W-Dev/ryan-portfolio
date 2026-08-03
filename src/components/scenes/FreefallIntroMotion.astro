@@ -14,18 +14,27 @@
 
 	const TOTAL_DURATION = 4;
 	const HERO_HANDOFF_START = 3.35;
+	const REDUCED_TOTAL_DURATION = 1.2;
+	const REDUCED_HERO_HANDOFF_START = 0.72;
 	const ASSET_READINESS_TIMEOUT_MS = 1500;
-	const STARTUP_WATCHDOG_MS = 6750;
+	const STARTUP_WATCHDOG_MS = 5250;
+	const FALLBACK_DURATION_MS = 4000;
+	const REDUCED_FALLBACK_DURATION_MS = 1200;
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	type IntroState =
 		| 'pending'
 		| 'initializing'
+		| 'fallback'
 		| 'playing'
 		| 'completing'
 		| 'complete'
 		| 'recovered';
 	type CompletionReason =
-		'timeline' | 'watchdog' | 'missing-dom' | 'initialization-failure';
+		| 'timeline'
+		| 'watchdog'
+		| 'missing-dom'
+		| 'late-start'
+		| 'initialization-failure';
 	const freefallWindow = window as Window & {
 		__freefallIntroCleanup?: () => void;
 		__freefallIntroState?: IntroState;
@@ -46,7 +55,10 @@
 
 	let introState: IntroState = 'pending';
 	let runtimeComplete: ((recovered: boolean) => void) | undefined;
+	let runtimeFallback: (() => void) | undefined;
 	let completionDispatched = false;
+	let fallbackCompletionTimer = 0;
+	const introStartedAt = performance.now();
 	const debugIntroEnabled =
 		import.meta.env.DEV &&
 		new URLSearchParams(window.location.search).has('debugIntro');
@@ -108,7 +120,7 @@
 	const emergencyRelease = () => {
 		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
 		intro?.setAttribute('hidden', '');
-		if (intro) delete intro.dataset.sequenceReady;
+		if (intro) delete intro.dataset.introOwner;
 		document.documentElement.style.removeProperty('overflow');
 		document.documentElement.style.removeProperty('scrollbar-gutter');
 		document.body.style.removeProperty('overflow');
@@ -123,6 +135,8 @@
 	) => {
 		if (completionDispatched) return;
 		completionDispatched = true;
+		window.clearTimeout(fallbackCompletionTimer);
+		fallbackCompletionTimer = 0;
 		setIntroState('completing');
 		debugIntro('completion-requested', { reason, recovered });
 		if (recovered) debugIntro('recovery-activated', { reason });
@@ -137,6 +151,38 @@
 			setIntroState(recovered ? 'recovered' : 'complete');
 			window.dispatchEvent(new Event(FREEFALL_COMPLETE_EVENT));
 		}
+	};
+
+	const scheduleFallbackCompletion = (reason: CompletionReason) => {
+		if (completionDispatched || fallbackCompletionTimer) return;
+		setIntroState('fallback');
+		try {
+			runtimeFallback?.();
+		} catch {
+			// The CSS-owned first frame remains available even if partial GSAP cleanup fails.
+		}
+		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
+		if (intro) {
+			intro.hidden = false;
+			delete intro.dataset.introOwner;
+		}
+		const fallbackDuration = window.matchMedia(
+			'(prefers-reduced-motion: reduce)',
+		).matches
+			? REDUCED_FALLBACK_DURATION_MS
+			: FALLBACK_DURATION_MS;
+		const remaining = Math.max(
+			100,
+			fallbackDuration - (performance.now() - introStartedAt),
+		);
+		debugIntro('fallback-scheduled', {
+			reason,
+			remaining: Math.round(remaining),
+		});
+		fallbackCompletionTimer = window.setTimeout(() => {
+			fallbackCompletionTimer = 0;
+			completeIntro(reason, true);
+		}, remaining);
 	};
 
 	const initialiseFreefallIntro = () => {
@@ -161,7 +207,8 @@
 			: [];
 		const original = {
 			rootOverflow: document.documentElement.style.overflow,
-			rootGutter: document.documentElement.style.scrollbarGutter,
+			rootGutter:
+				document.documentElement.style.getPropertyValue('scrollbar-gutter'),
 			bodyOverflow: document.body.style.overflow,
 			bodyTouchAction: document.body.style.touchAction,
 			scrollRestoration: history.scrollRestoration,
@@ -222,7 +269,14 @@
 
 		const restorePage = () => {
 			document.documentElement.style.overflow = original.rootOverflow;
-			document.documentElement.style.scrollbarGutter = original.rootGutter;
+			if (original.rootGutter) {
+				document.documentElement.style.setProperty(
+					'scrollbar-gutter',
+					original.rootGutter,
+				);
+			} else {
+				document.documentElement.style.removeProperty('scrollbar-gutter');
+			}
 			document.body.style.overflow = original.bodyOverflow;
 			document.body.style.touchAction = original.bodyTouchAction;
 			history.scrollRestoration = original.scrollRestoration;
@@ -254,7 +308,7 @@
 			timeline = undefined;
 			context = undefined;
 			if (intro) {
-				delete intro.dataset.sequenceReady;
+				delete intro.dataset.introOwner;
 				intro.hidden = true;
 			}
 			try {
@@ -270,9 +324,21 @@
 				delete freefallWindow.__freefallIntroCleanup;
 			}
 			if (runtimeComplete === handleComplete) runtimeComplete = undefined;
+			if (runtimeFallback === handleFallback) runtimeFallback = undefined;
 		};
 
 		const handleComplete = () => releaseRuntime(true);
+		const handleFallback = () => {
+			clearTimers();
+			try {
+				timeline?.kill();
+				context?.revert();
+			} catch {
+				// CSS owns the recovery frame after the GSAP owner flag is removed.
+			}
+			timeline = undefined;
+			context = undefined;
+		};
 		const handleCleanup = () => releaseRuntime(false);
 		const handleSwap = () => handleCleanup();
 
@@ -380,27 +446,43 @@
 				!indicator ||
 				passElements.length === 0
 			) {
-				completeIntro('missing-dom');
+				scheduleFallbackCompletion('missing-dom');
 				return;
 			}
 
 			intro.hidden = false;
-			delete intro.dataset.sequenceReady;
+			delete intro.dataset.introOwner;
 			delete arrival.dataset.introComplete;
 			document.documentElement.style.overflow = 'hidden';
-			document.documentElement.style.scrollbarGutter =
-				window.innerWidth >= 768 ? 'stable' : 'auto';
+			if (
+				window.innerWidth >= 768 &&
+				CSS.supports('scrollbar-gutter', 'stable')
+			) {
+				document.documentElement.style.setProperty(
+					'scrollbar-gutter',
+					'stable',
+				);
+			}
 			document.body.style.overflow = 'hidden';
 			document.body.style.touchAction = 'none';
 			history.scrollRestoration = 'manual';
 			window.scrollTo(0, 0);
+			if (performance.now() - introStartedAt > 350) {
+				scheduleFallbackCompletion('late-start');
+				return;
+			}
 
-			await waitForArtwork();
-			if (settled) return;
+			void waitForArtwork();
 
 			const reducedMotion = window.matchMedia(
 				'(prefers-reduced-motion: reduce)',
 			).matches;
+			const runDuration = reducedMotion
+				? REDUCED_TOTAL_DURATION
+				: TOTAL_DURATION;
+			const handoffStart = reducedMotion
+				? REDUCED_HERO_HANDOFF_START
+				: HERO_HANDOFF_START;
 
 			context = gsap.context(() => {
 				gsap.set(terrainCamera, {
@@ -488,7 +570,9 @@
 				const renderPasses = (elapsed: number) => {
 					passes.forEach((pass) => {
 						const phase =
-							(pass.initialPhase + elapsed / pass.cycleDuration) % 1;
+							(pass.initialPhase +
+								(reducedMotion ? 0 : elapsed / pass.cycleDuration)) %
+							1;
 						pass.setScale(
 							pass.startScale + (pass.endScale - pass.startScale) * phase,
 						);
@@ -509,22 +593,22 @@
 					.to(
 						clock,
 						{
-							elapsed: TOTAL_DURATION,
-							duration: TOTAL_DURATION,
+							elapsed: runDuration,
+							duration: runDuration,
 							ease: 'none',
 							onUpdate: () => renderPasses(clock.elapsed),
 						},
 						0,
 					)
-					.addLabel('hero-handoff', HERO_HANDOFF_START)
+					.addLabel('hero-handoff', handoffStart)
 					.to(
 						world,
 						{
 							'--hero-reveal': '150%',
-							duration: TOTAL_DURATION - HERO_HANDOFF_START,
+							duration: runDuration - handoffStart,
 							ease: 'power3.inOut',
 						},
-						HERO_HANDOFF_START,
+						handoffStart,
 					)
 					.to(
 						title,
@@ -532,28 +616,28 @@
 							autoAlpha: 1,
 							yPercent: 0,
 							scale: 1,
-							duration: 0.48,
+							duration: reducedMotion ? 0.32 : 0.48,
 							ease: 'power3.out',
 						},
-						HERO_HANDOFF_START + 0.11,
+						handoffStart + (reducedMotion ? 0.06 : 0.11),
 					)
 					.to(
 						[subtitle, indicator],
 						{
 							autoAlpha: 1,
-							duration: 0.26,
+							duration: reducedMotion ? 0.18 : 0.26,
 							ease: 'power2.out',
 						},
-						HERO_HANDOFF_START + 0.38,
+						handoffStart + (reducedMotion ? 0.26 : 0.38),
 					)
-					.addLabel('intro-complete', TOTAL_DURATION);
+					.addLabel('intro-complete', runDuration);
 
 				timeline.totalTime(0, true);
 			}, intro);
 
 			void world.getBoundingClientRect();
+			intro.dataset.introOwner = 'gsap';
 			setIntroState('playing', intro);
-			intro.dataset.sequenceReady = '';
 			debugIntro('first-visible-frame', {
 				reducedMotion,
 				timelineTime: timeline?.time() ?? null,
@@ -574,12 +658,13 @@
 
 		freefallWindow.__freefallIntroCleanup = handleCleanup;
 		runtimeComplete = handleComplete;
+		runtimeFallback = handleFallback;
 		import.meta.hot?.dispose(handleCleanup);
 		void start().catch((error: unknown) => {
 			debugIntro('initialization-error', {
 				message: error instanceof Error ? error.message : String(error),
 			});
-			completeIntro('initialization-failure');
+			scheduleFallbackCompletion('initialization-failure');
 		});
 	};
 
@@ -589,6 +674,6 @@
 		debugIntro('initialization-error', {
 			message: error instanceof Error ? error.message : String(error),
 		});
-		completeIntro('initialization-failure');
+		scheduleFallbackCompletion('initialization-failure');
 	}
 </script>

@@ -24,10 +24,23 @@ const contacts: Contact[] = [
 		href: 'https://wa.me/971508114541',
 	},
 ];
+
+const iconPaths: Record<Contact['icon'], string> = {
+	email:
+		'M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2Zm13.8 2.5-7 5.2-7-5.2V17h14V9.5Z',
+	github:
+		'M12 2.5a9.6 9.6 0 0 0-3 18.7c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.7-1.3-2.2-.3-4.6-1.1-4.6-4.8 0-1.1.4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 4.9 0c1.8-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.6.7 1 1.5 1 2.6 0 3.7-2.3 4.5-4.6 4.8.4.3.7.9.7 1.8v2.7c0 .4.2.6.7.5A9.6 9.6 0 0 0 12 2.5Z',
+	linkedin:
+		'M5.2 8.3H1.8V19h3.4V8.3Zm.2-3.4A2 2 0 1 0 1.5 5a2 2 0 0 0 3.9 0ZM22 12.9c0-3.2-1.7-4.9-4-4.9-1.9 0-2.7 1-3.1 1.8V8.3h-3.4V19h3.4v-5.3c0-1.4.3-2.8 2.1-2.8 1.8 0 1.8 1.7 1.8 2.9V19H22v-6.1Z',
+	telegram:
+		'm21.5 3.7-3 16c-.2 1.1-.9 1.4-1.8.9l-4.6-3.4-2.2 2.2c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.6 13.9 2 12.4c-1-.3-1-1 .2-1.5l18-6.9c.8-.3 1.6.2 1.3 1.7Z',
+	whatsapp:
+		'M12 2.4a9.5 9.5 0 0 0-8.1 14.4l-1.3 4.8 4.9-1.3A9.6 9.6 0 1 0 12 2.4Zm0 17.5c-1.5 0-2.9-.4-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A7.9 7.9 0 1 1 12 19.9Zm4.4-5.9c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.6.8-.8 1-.1.2-.3.2-.5.1-1.4-.7-2.4-1.3-3.3-2.9-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-.8-2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.2-1.2-.2-.2-.4-.3-.6-.4Z',
+};
 ---
 
 <nav class="social-flight" data-social-flight aria-label="Contact Ryan Wynn">
-	<ul class="contact-list">
+	<ul class="contact-list contact-list--compact" data-contact-compact>
 		{
 			contacts.map((contact) => (
 				<li>
@@ -42,36 +55,49 @@ const contacts: Contact[] = [
 						}
 						aria-label={
 							contact.href.startsWith('mailto:')
-								? `Email ${contact.label === 'Email' ? 'Ryan Wynn' : contact.label}`
+								? 'Email Ryan Wynn'
 								: `${contact.label} — opens in a new tab`
 						}
 					>
 						<span class="contact-icon" aria-hidden="true">
-							{contact.icon === 'email' && (
-								<svg viewBox="0 0 24 24">
-									<path d="M3 5h18v14H3V5Zm2.2 2 6.8 5.1L18.8 7H5.2Zm13.8 2.5-7 5.2-7-5.2V17h14V9.5Z" />
-								</svg>
-							)}
-							{contact.icon === 'github' && (
-								<svg viewBox="0 0 24 24">
-									<path d="M12 2.5a9.6 9.6 0 0 0-3 18.7c.5.1.7-.2.7-.5v-1.9c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.7-1.3-2.2-.3-4.6-1.1-4.6-4.8 0-1.1.4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 4.9 0c1.8-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.6.7 1 1.5 1 2.6 0 3.7-2.3 4.5-4.6 4.8.4.3.7.9.7 1.8v2.7c0 .4.2.6.7.5A9.6 9.6 0 0 0 12 2.5Z" />
-								</svg>
-							)}
-							{contact.icon === 'linkedin' && (
-								<svg viewBox="0 0 24 24">
-									<path d="M5.2 8.3H1.8V19h3.4V8.3Zm.2-3.4A2 2 0 1 0 1.5 5a2 2 0 0 0 3.9 0ZM22 12.9c0-3.2-1.7-4.9-4-4.9-1.9 0-2.7 1-3.1 1.8V8.3h-3.4V19h3.4v-5.3c0-1.4.3-2.8 2.1-2.8 1.8 0 1.8 1.7 1.8 2.9V19H22v-6.1Z" />
-								</svg>
-							)}
-							{contact.icon === 'telegram' && (
-								<svg viewBox="0 0 24 24">
-									<path d="m21.5 3.7-3 16c-.2 1.1-.9 1.4-1.8.9l-4.6-3.4-2.2 2.2c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.6 13.9 2 12.4c-1-.3-1-1 .2-1.5l18-6.9c.8-.3 1.6.2 1.3 1.7Z" />
-								</svg>
-							)}
-							{contact.icon === 'whatsapp' && (
-								<svg viewBox="0 0 24 24">
-									<path d="M12 2.4a9.5 9.5 0 0 0-8.1 14.4l-1.3 4.8 4.9-1.3A9.6 9.6 0 1 0 12 2.4Zm0 17.5c-1.5 0-2.9-.4-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A7.9 7.9 0 1 1 12 19.9Zm4.4-5.9c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.6.8-.8 1-.1.2-.3.2-.5.1-1.4-.7-2.4-1.3-3.3-2.9-.3-.5.3-.5.8-1.6.1-.2 0-.4 0-.5l-.8-2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.2.2-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.2.7 3 .6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.2-1.2-.2-.2-.4-.3-.6-.4Z" />
-								</svg>
-							)}
+							<svg viewBox="0 0 24 24">
+								<path d={iconPaths[contact.icon]} />
+							</svg>
+						</span>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+
+	<ul
+		class="contact-list contact-list--footer"
+		data-contact-footer-list
+		aria-hidden="true"
+		inert
+	>
+		{
+			contacts.map((contact) => (
+				<li>
+					<a
+						class="contact-item"
+						href={contact.href}
+						target={contact.href.startsWith('mailto:') ? undefined : '_blank'}
+						rel={
+							contact.href.startsWith('mailto:')
+								? undefined
+								: 'noopener noreferrer'
+						}
+						aria-label={
+							contact.href.startsWith('mailto:')
+								? 'Email Ryan Wynn'
+								: `${contact.label} — opens in a new tab`
+						}
+					>
+						<span class="contact-icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24">
+								<path d={iconPaths[contact.icon]} />
+							</svg>
 						</span>
 						<span class="contact-label">{contact.label}</span>
 					</a>
@@ -86,8 +112,7 @@ const contacts: Contact[] = [
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 	gsap.registerPlugin(ScrollTrigger);
-	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
-
+	const NAV_TRIGGER_ID = 'social-flight-controller';
 	const socialWindow = window as Window & {
 		__socialFlightCleanup?: () => void;
 	};
@@ -95,166 +120,248 @@ const contacts: Contact[] = [
 
 	const initialiseSocialFlight = () => {
 		const nav = document.querySelector<HTMLElement>('[data-social-flight]');
+		const compact = nav?.querySelector<HTMLElement>('[data-contact-compact]');
+		const footerList = nav?.querySelector<HTMLElement>(
+			'[data-contact-footer-list]',
+		);
 		const hero = document.querySelector<HTMLElement>('[data-arrival-scene]');
 		const footer = document.querySelector<HTMLElement>('[data-contact-footer]');
-		const labels = nav
-			? Array.from(nav.querySelectorAll<HTMLElement>('.contact-label'))
-			: [];
-
-		if (!nav || !hero || !footer || labels.length === 0) return;
+		if (!nav || !compact || !footerList || !hero || !footer) return;
 
 		let context: gsap.Context | undefined;
-		let resizeFrame = 0;
-		let viewportWidth = window.innerWidth;
-		let viewportHeight = window.innerHeight;
-		let viewportPortrait = viewportHeight > viewportWidth;
-		let viewportBreakpoint = viewportWidth <= 640 ? 'mobile' : 'large';
+		let timeline: gsap.core.Timeline | undefined;
+		let resizeTimer = 0;
+		let buildFrame = 0;
+		let pendingBuild = false;
+		let gestureActive = false;
+		let footerInteractive = false;
+		let viewport = {
+			width: window.innerWidth,
+			height: window.innerHeight,
+			portrait: window.innerHeight > window.innerWidth,
+			breakpoint: window.innerWidth <= 640 ? 'mobile' : 'large',
+		};
+
+		const setFooterInteractive = (active: boolean) => {
+			if (active === footerInteractive) return;
+			footerInteractive = active;
+			compact.toggleAttribute('inert', active);
+			compact.setAttribute('aria-hidden', String(active));
+			footerList.toggleAttribute('inert', !active);
+			footerList.setAttribute('aria-hidden', String(!active));
+			footerList.toggleAttribute('data-contact-active', active);
+			nav.toggleAttribute('data-footer-mode', active);
+		};
+
+		const revertTimeline = () => {
+			timeline?.scrollTrigger?.kill();
+			timeline?.kill();
+			context?.revert();
+			timeline = undefined;
+			context = undefined;
+		};
 
 		const build = () => {
-			context?.revert();
-			const compactWidth = nav.offsetWidth;
-			const navStyles = window.getComputedStyle(nav);
-			const safeInlineStart =
+			revertTimeline();
+			const styles = window.getComputedStyle(nav);
+			const safeStart =
 				Number.parseFloat(
-					navStyles.getPropertyValue('--contact-safe-inline-start'),
+					styles.getPropertyValue('--contact-safe-inline-start'),
 				) || 0;
-			const safeInlineEnd =
+			const safeEnd =
 				Number.parseFloat(
-					navStyles.getPropertyValue('--contact-safe-inline-end'),
+					styles.getPropertyValue('--contact-safe-inline-end'),
 				) || 0;
-			const mobileHero = window.matchMedia('(max-width: 40rem)').matches;
-			const centeredHeroX = (window.innerWidth - compactWidth) / 2;
-			const minimumHeroX = safeInlineStart + 12;
-			const maximumHeroX = Math.max(
-				minimumHeroX,
-				window.innerWidth - safeInlineEnd - compactWidth - 12,
+			const safeBottom =
+				Number.parseFloat(
+					styles.getPropertyValue('--contact-safe-block-end'),
+				) || 0;
+			const mobile = window.matchMedia('(max-width: 40rem)').matches;
+			const topOffset = mobile ? 11 : 16;
+			const inlinePadding = 12;
+			const compactWidth = compact.offsetWidth;
+			const compactHeight = compact.offsetHeight;
+			const footerWidth = footerList.offsetWidth;
+			const footerHeight = footerList.offsetHeight;
+			const centeredCompactX = (window.innerWidth - compactWidth) / 2;
+			const heroX = mobile
+				? Math.min(
+						Math.max(centeredCompactX, safeStart + inlinePadding),
+						window.innerWidth - safeEnd - compactWidth - inlinePadding,
+					)
+				: Math.max(inlinePadding, window.innerWidth - compactWidth - 24);
+			const heroY = Math.max(
+				topOffset,
+				window.innerHeight - compactHeight - safeBottom - 42,
 			);
-			const mobileHeroX = Math.min(
-				Math.max(centeredHeroX, minimumHeroX),
-				maximumHeroX,
-			);
-			const heroX = mobileHero
-				? mobileHeroX
-				: Math.max(12, window.innerWidth - compactWidth - 24);
-			const headerX = Math.max(0, (window.innerWidth - compactWidth) / 2);
-			const heroY = Math.max(0, window.innerHeight - nav.offsetHeight - 42);
-			const navBlockStart =
-				Number.parseFloat(window.getComputedStyle(nav).insetBlockStart) || 0;
-			const heroNavClearance = Math.max(
-				0,
-				window.innerHeight - (navBlockStart + heroY),
-			);
-			const footerY = Math.max(
-				0,
-				window.innerHeight - (window.innerWidth < 640 ? 164 : 84),
-			);
-			const footerWidth = Math.min(window.innerWidth - 24, 820);
+			const headerX = Math.max(0, centeredCompactX);
+			const headerY = topOffset;
 			const footerX = Math.max(0, (window.innerWidth - footerWidth) / 2);
+			const footerY = Math.max(
+				topOffset,
+				window.innerHeight - footerHeight - safeBottom - 12,
+			);
+			const maxScroll = Math.max(1, ScrollTrigger.maxScroll(window));
+			const heroEnd = Math.min(
+				maxScroll,
+				Math.max(
+					1,
+					hero.getBoundingClientRect().top + window.scrollY + hero.offsetHeight,
+				),
+			);
+			const footerTop = footer.getBoundingClientRect().top + window.scrollY;
+			const footerStart = Math.min(
+				maxScroll - 1,
+				Math.max(heroEnd + 1, footerTop - window.innerHeight * 0.58),
+			);
+			const footerDuration = Math.max(1, maxScroll - footerStart);
+			const holdDuration = Math.max(0, footerStart - heroEnd);
+
 			hero.style.setProperty(
 				'--hero-contact-nav-clearance',
-				`${heroNavClearance}px`,
+				`${Math.max(0, window.innerHeight - heroY)}px`,
 			);
+			nav.setAttribute('data-nav-ready', '');
 
 			context = gsap.context(() => {
-				gsap.set(nav, { x: heroX, y: heroY, scale: 1, width: 'auto' });
-				gsap.set(labels, { autoAlpha: 0, maxWidth: 0, marginInlineStart: 0 });
-
-				gsap.to(nav, {
-					x: headerX,
-					y: 0,
-					scale: 0.88,
-					ease: 'none',
-					scrollTrigger: {
-						id: 'social-hero-to-header',
-						trigger: hero,
-						start: 'top top',
-						end: 'bottom top',
-						scrub: true,
-						invalidateOnRefresh: true,
-					},
+				gsap.set(compact, {
+					x: heroX,
+					y: heroY,
+					scale: 1,
+					autoAlpha: 1,
+					force3D: true,
+				});
+				gsap.set(footerList, {
+					x: footerX,
+					y: headerY,
+					scale: 0.9,
+					autoAlpha: 0,
+					force3D: true,
 				});
 
-				const footerTimeline = gsap.timeline({
-					defaults: { ease: 'none' },
-					scrollTrigger: {
-						id: 'social-header-to-footer',
-						trigger: footer,
-						start: 'top 42%',
-						end: 'top top',
-						scrub: true,
-						invalidateOnRefresh: true,
-						onEnter: () => {
-							nav.dataset.footerMode = '';
+				timeline = gsap
+					.timeline({
+						defaults: { ease: 'none' },
+						scrollTrigger: {
+							id: NAV_TRIGGER_ID,
+							trigger: document.documentElement,
+							start: 0,
+							end: maxScroll,
+							scrub: ScrollTrigger.isTouch ? 0.28 : true,
+							onUpdate: (self) => {
+								setFooterInteractive(
+									self.scroll() >= footerStart + footerDuration * 0.5,
+								);
+							},
+							onRefresh: (self) => {
+								setFooterInteractive(
+									self.scroll() >= footerStart + footerDuration * 0.5,
+								);
+							},
 						},
-						onLeaveBack: () => {
-							delete nav.dataset.footerMode;
-						},
-						onRefresh: (self) => {
-							nav.toggleAttribute('data-footer-mode', self.progress > 0);
-						},
-					},
-				});
-
-				footerTimeline
-					.to(nav, { x: footerX, y: footerY, scale: 1, width: footerWidth }, 0)
+					})
+					.to(compact, {
+						x: headerX,
+						y: headerY,
+						scale: 0.88,
+						duration: heroEnd,
+					})
+					.to({}, { duration: holdDuration })
 					.to(
-						labels,
-						{ autoAlpha: 1, maxWidth: 116, marginInlineStart: 8 },
-						0.12,
+						compact,
+						{
+							x: footerX + (footerWidth - compactWidth) / 2,
+							y: footerY,
+							scale: 0.92,
+							autoAlpha: 0,
+							duration: footerDuration,
+						},
+						footerStart,
+					)
+					.to(
+						footerList,
+						{
+							x: footerX,
+							y: footerY,
+							scale: 1,
+							autoAlpha: 1,
+							duration: footerDuration,
+						},
+						footerStart,
 					);
 			}, nav);
+
+			ScrollTrigger.refresh();
+		};
+
+		const rebuildWhenIdle = () => {
+			window.clearTimeout(resizeTimer);
+			resizeTimer = 0;
+			if (!pendingBuild || gestureActive || ScrollTrigger.isScrolling()) return;
+			pendingBuild = false;
+			build();
+		};
+
+		const scheduleBuild = () => {
+			pendingBuild = true;
+			window.clearTimeout(resizeTimer);
+			resizeTimer = window.setTimeout(rebuildWhenIdle, 220);
 		};
 
 		const handleResize = () => {
-			const nextWidth = window.innerWidth;
-			const nextHeight = window.innerHeight;
-			const nextPortrait = nextHeight > nextWidth;
-			const nextBreakpoint = nextWidth <= 640 ? 'mobile' : 'large';
-			const widthChanged = Math.abs(nextWidth - viewportWidth) >= 1;
-			const heightChanged = Math.abs(nextHeight - viewportHeight) >= 1;
-			const meaningfulResize =
-				widthChanged ||
-				nextPortrait !== viewportPortrait ||
-				nextBreakpoint !== viewportBreakpoint ||
-				(nextWidth > 768 && heightChanged);
-			viewportWidth = nextWidth;
-			viewportHeight = nextHeight;
-			viewportPortrait = nextPortrait;
-			viewportBreakpoint = nextBreakpoint;
-			if (!meaningfulResize) return;
-			window.cancelAnimationFrame(resizeFrame);
-			resizeFrame = window.requestAnimationFrame(() => {
-				build();
-				ScrollTrigger.refresh();
-			});
+			const next = {
+				width: window.innerWidth,
+				height: window.innerHeight,
+				portrait: window.innerHeight > window.innerWidth,
+				breakpoint: window.innerWidth <= 640 ? 'mobile' : 'large',
+			};
+			const meaningful =
+				Math.abs(next.width - viewport.width) >= 1 ||
+				next.portrait !== viewport.portrait ||
+				next.breakpoint !== viewport.breakpoint ||
+				(next.width > 768 && Math.abs(next.height - viewport.height) >= 1);
+			viewport = next;
+			if (meaningful) scheduleBuild();
 		};
-		const handleIntroComplete = () => {
-			window.cancelAnimationFrame(resizeFrame);
-			resizeFrame = window.requestAnimationFrame(() => {
-				resizeFrame = window.requestAnimationFrame(() => {
-					build();
-					ScrollTrigger.refresh();
-				});
-			});
+
+		const handlePointerDown = (event: PointerEvent) => {
+			if (event.pointerType === 'touch') gestureActive = true;
+		};
+		const handlePointerUp = (event: PointerEvent) => {
+			if (event.pointerType !== 'touch') return;
+			gestureActive = false;
+			if (pendingBuild) scheduleBuild();
+		};
+		const handleScrollEnd = () => {
+			if (pendingBuild && !gestureActive) scheduleBuild();
 		};
 
 		const cleanup = () => {
 			window.removeEventListener('resize', handleResize);
-			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
+			window.removeEventListener('pointerdown', handlePointerDown);
+			window.removeEventListener('pointerup', handlePointerUp);
+			window.removeEventListener('pointercancel', handlePointerUp);
+			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
 			document.removeEventListener('astro:before-swap', cleanup);
-			window.cancelAnimationFrame(resizeFrame);
-			context?.revert();
+			window.clearTimeout(resizeTimer);
+			window.cancelAnimationFrame(buildFrame);
+			revertTimeline();
 			hero.style.removeProperty('--hero-contact-nav-clearance');
 			if (socialWindow.__socialFlightCleanup === cleanup) {
 				delete socialWindow.__socialFlightCleanup;
 			}
 		};
 
-		build();
+		buildFrame = window.requestAnimationFrame(build);
 		window.addEventListener('resize', handleResize, { passive: true });
-		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
-			once: true,
+		window.addEventListener('pointerdown', handlePointerDown, {
+			passive: true,
 		});
+		window.addEventListener('pointerup', handlePointerUp, { passive: true });
+		window.addEventListener('pointercancel', handlePointerUp, {
+			passive: true,
+		});
+		ScrollTrigger.addEventListener('scrollEnd', handleScrollEnd);
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 		socialWindow.__socialFlightCleanup = cleanup;
 		import.meta.hot?.dispose(cleanup);
@@ -267,13 +374,21 @@ const contacts: Contact[] = [
 	.social-flight {
 		--contact-safe-inline-start: env(safe-area-inset-left, 0px);
 		--contact-safe-inline-end: env(safe-area-inset-right, 0px);
-
+		--contact-safe-block-end: env(safe-area-inset-bottom, 0px);
 		position: fixed;
 		z-index: 700;
-		inset-block-start: 1rem;
-		inset-inline-start: 0;
-		inline-size: max-content;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.contact-list {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
 		padding: 0.55rem;
+		margin: 0;
 		background: var(--ink);
 		box-shadow: 0.35rem 0.35rem 0 var(--red);
 		clip-path: polygon(
@@ -284,17 +399,32 @@ const contacts: Contact[] = [
 			0 100%,
 			0 0.65rem
 		);
-		will-change: transform, width;
+		list-style: none;
+		pointer-events: none;
+		will-change: transform, opacity;
 	}
 
-	.contact-list {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.35rem;
-		padding: 0;
-		margin: 0;
-		list-style: none;
+	.social-flight:not([data-nav-ready]) .contact-list--compact {
+		inset-block-end: calc(2.625rem + env(safe-area-inset-bottom, 0px));
+		inset-inline-start: 50%;
+		transform: translateX(-50%);
+	}
+
+	.social-flight[data-nav-ready] .contact-list {
+		inset-block-start: 0;
+		inset-inline-start: 0;
+	}
+
+	.contact-list--footer {
+		inline-size: min(calc(100vw - 1.5rem), 51.25rem);
+		flex-wrap: wrap;
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	.contact-list--compact,
+	.contact-list--footer[data-contact-active] {
+		pointer-events: auto;
 	}
 
 	.contact-item {
@@ -308,6 +438,7 @@ const contacts: Contact[] = [
 		background: var(--cobalt);
 		color: var(--cream-light);
 		text-decoration: none;
+		pointer-events: auto;
 		transition:
 			background-color 140ms ease,
 			color 140ms ease,
@@ -343,10 +474,7 @@ const contacts: Contact[] = [
 	}
 
 	.contact-label {
-		overflow: hidden;
-		max-inline-size: 0;
-		margin-inline-start: 0;
-		opacity: 0;
+		margin-inline-start: 0.5rem;
 		font-size: 0.8rem;
 		font-weight: 900;
 		letter-spacing: 0.065em;
@@ -355,19 +483,18 @@ const contacts: Contact[] = [
 		white-space: nowrap;
 	}
 
-	@media (max-width: 40rem) {
-		.social-flight {
-			inset-block-start: 0.7rem;
-			padding: 0.4rem;
-			box-shadow: 0.25rem 0.25rem 0 var(--red);
+	@media (min-width: 40.001rem) {
+		.social-flight:not([data-nav-ready]) .contact-list--compact {
+			inset-inline: auto 1.5rem;
+			transform: none;
 		}
+	}
 
+	@media (max-width: 40rem) {
 		.contact-list {
 			gap: 0.25rem;
-		}
-
-		.social-flight[data-footer-mode] .contact-list {
-			flex-wrap: wrap;
+			padding: 0.4rem;
+			box-shadow: 0.25rem 0.25rem 0 var(--red);
 		}
 
 		.contact-item {
@@ -382,7 +509,9 @@ const contacts: Contact[] = [
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.contact-list,
 		.contact-item {
+			will-change: auto;
 			transition: none;
 		}
 	}

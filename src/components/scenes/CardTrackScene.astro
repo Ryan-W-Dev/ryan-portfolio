@@ -52,11 +52,12 @@ const cards = [
 						<article>
 							<img
 								class="card-artwork"
+								data-card-artwork
 								src={card.artwork}
 								alt=""
 								width="960"
 								height="600"
-								loading={index < 2 ? 'eager' : 'lazy'}
+								loading="lazy"
 								decoding="async"
 								draggable="false"
 							/>
@@ -75,6 +76,97 @@ const cards = [
 		</ol>
 	</div>
 </section>
+
+<script>
+	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
+	const cardWindow = window as Window & {
+		__cardArtworkCleanup?: () => void;
+		requestIdleCallback?: (
+			callback: IdleRequestCallback,
+			options?: IdleRequestOptions,
+		) => number;
+		cancelIdleCallback?: (handle: number) => void;
+	};
+	cardWindow.__cardArtworkCleanup?.();
+
+	const initialiseCardArtwork = () => {
+		const scene = document.querySelector<HTMLElement>('[data-card-scene]');
+		const images = scene
+			? Array.from(
+					scene.querySelectorAll<HTMLImageElement>('[data-card-artwork]'),
+				)
+			: [];
+		if (!scene || images.length === 0) return;
+
+		let idleHandle = 0;
+		let fallbackTimer = 0;
+		let started = false;
+		let observer: IntersectionObserver | undefined;
+
+		const preloadAndDecode = () => {
+			if (started) return;
+			started = true;
+			for (const image of images) {
+				image.loading = 'eager';
+				if (typeof image.decode === 'function')
+					void image.decode().catch(() => {});
+			}
+			observer?.disconnect();
+		};
+
+		const schedulePreload = () => {
+			if (started || idleHandle || fallbackTimer) return;
+			if (typeof cardWindow.requestIdleCallback === 'function') {
+				idleHandle = cardWindow.requestIdleCallback(
+					() => {
+						idleHandle = 0;
+						preloadAndDecode();
+					},
+					{ timeout: 900 },
+				);
+				return;
+			}
+			fallbackTimer = window.setTimeout(() => {
+				fallbackTimer = 0;
+				preloadAndDecode();
+			}, 120);
+		};
+
+		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
+		if (intro?.hidden) schedulePreload();
+		else
+			window.addEventListener(FREEFALL_COMPLETE_EVENT, schedulePreload, {
+				once: true,
+			});
+
+		observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting) preloadAndDecode();
+			},
+			{ rootMargin: '120% 0px', threshold: 0 },
+		);
+		observer.observe(scene);
+
+		const cleanup = () => {
+			window.removeEventListener(FREEFALL_COMPLETE_EVENT, schedulePreload);
+			document.removeEventListener('astro:before-swap', cleanup);
+			observer?.disconnect();
+			if (idleHandle && typeof cardWindow.cancelIdleCallback === 'function') {
+				cardWindow.cancelIdleCallback(idleHandle);
+			}
+			window.clearTimeout(fallbackTimer);
+			if (cardWindow.__cardArtworkCleanup === cleanup) {
+				delete cardWindow.__cardArtworkCleanup;
+			}
+		};
+
+		document.addEventListener('astro:before-swap', cleanup, { once: true });
+		cardWindow.__cardArtworkCleanup = cleanup;
+		import.meta.hot?.dispose(cleanup);
+	};
+
+	initialiseCardArtwork();
+</script>
 
 <style>
 	.card-sequence {
@@ -250,6 +342,12 @@ const cards = [
 
 		p {
 			max-inline-size: 24ch;
+		}
+	}
+
+	@media (max-width: 64rem) {
+		.card-artwork {
+			filter: none;
 		}
 	}
 </style>

@@ -42,6 +42,7 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 
 	gsap.registerPlugin(ScrollTrigger);
 	ScrollTrigger.config({ ignoreMobileResize: true });
+	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 
 	const heroCloudWindow = window as Window & {
 		__heroCloudCleanup?: () => void;
@@ -63,20 +64,18 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 			return;
 
 		let visible = false;
+		let introComplete = scene.hasAttribute('data-intro-complete');
 		let context: gsap.Context | undefined;
 		const update = () => {
-			const active = visible && !document.hidden;
+			const active = visible && introComplete && !document.hidden;
 			clouds.toggleAttribute('data-clouds-active', active);
 			scene.toggleAttribute('data-hero-active', active);
 		};
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				visible = entry.isIntersecting;
-				update();
-			},
-			{ threshold: 0.06 },
-		);
 		const handleVisibility = () => update();
+		const handleIntroComplete = () => {
+			introComplete = true;
+			update();
+		};
 
 		context = gsap.context(() => {
 			const timeline = gsap.timeline({
@@ -86,8 +85,17 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 					trigger: scene,
 					start: 'top top',
 					end: 'bottom top',
-					scrub: true,
+					scrub: ScrollTrigger.isTouch ? 0.28 : true,
 					invalidateOnRefresh: true,
+					onToggle: (self) => {
+						visible = self.isActive;
+						update();
+					},
+					onRefresh: (self) => {
+						visible =
+							self.isActive || (self.progress === 0 && window.scrollY === 0);
+						update();
+					},
 				},
 			});
 
@@ -98,16 +106,18 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		}, scene);
 
 		const cleanup = () => {
-			observer.disconnect();
 			document.removeEventListener('visibilitychange', handleVisibility);
+			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
 			document.removeEventListener('astro:before-swap', cleanup);
 			context?.revert();
 			if (heroCloudWindow.__heroCloudCleanup === cleanup)
 				delete heroCloudWindow.__heroCloudCleanup;
 		};
 
-		observer.observe(scene);
 		document.addEventListener('visibilitychange', handleVisibility);
+		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
+			once: true,
+		});
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 		heroCloudWindow.__heroCloudCleanup = cleanup;
 		import.meta.hot?.dispose(cleanup);
@@ -153,6 +163,12 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		pointer-events: none;
 	}
 
+	@media (max-width: 64rem) {
+		.hero-clouds {
+			filter: none;
+		}
+	}
+
 	.arrival-content {
 		position: relative;
 		z-index: 2;
@@ -166,7 +182,7 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	.arrival-content h1,
 	.arrival-content p,
 	.scroll-indicator {
-		animation: arrival-content-fail-open 1ms linear 7s forwards;
+		animation: arrival-content-fail-open 1ms linear 4.25s forwards;
 		visibility: hidden;
 		opacity: 0;
 	}

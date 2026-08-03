@@ -87,22 +87,6 @@ button:focus-visible,
 	outline-offset: 0.3rem;
 }
 
-.skip-link {
-	position: fixed;
-	z-index: 5000;
-	inset-block-start: 0.75rem;
-	inset-inline-start: 0.75rem;
-	padding: 0.7rem 1rem;
-	background: var(--cream-light);
-	color: var(--ink);
-	font-weight: 800;
-	transform: translateY(-180%);
-}
-
-.skip-link:focus {
-	transform: translateY(0);
-}
-
 .scene {
 	position: relative;
 	display: grid;

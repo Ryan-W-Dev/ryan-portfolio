@@ -52,10 +52,9 @@ import RockFaceScene from './RockFaceScene.astro';
 	ScrollTrigger.config({ ignoreMobileResize: true });
 
 	const VISOR_SEQUENCE_TRIGGER_ID = 'extreme-card-visor-sequence';
-	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	const FINAL_CARD_SETTLE_VIEWPORT_RATIO = 0.25;
 	const MOBILE_TRANSITION_DISTANCE_MULTIPLIER = 2.1;
-	const MOBILE_SCRUB_SECONDS = 0.45;
+	const MOBILE_SCRUB_SECONDS = 0.3;
 	const GOGGLE_BASE_SIZE = { inline: 1200, block: 520 } as const;
 	const TRANSITION_SCROLL_RATIOS = {
 		helmetForm: 0.55,
@@ -760,11 +759,6 @@ import RockFaceScene from './RockFaceScene.astro';
 			if (pendingRebuild) scheduleRebuild();
 		};
 
-		const handleFreefallComplete = () => {
-			viewport = measureViewport();
-			scheduleRebuild();
-		};
-
 		const cleanup = () => {
 			if (disposed) {
 				return;
@@ -776,10 +770,6 @@ import RockFaceScene from './RockFaceScene.astro';
 			window.removeEventListener('pointerup', handlePointerUp);
 			window.removeEventListener('pointercancel', handlePointerUp);
 			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
-			window.removeEventListener(
-				FREEFALL_COMPLETE_EVENT,
-				handleFreefallComplete,
-			);
 			document.removeEventListener('astro:before-swap', cleanup);
 
 			window.clearTimeout(resizeTimer);
@@ -803,9 +793,6 @@ import RockFaceScene from './RockFaceScene.astro';
 			passive: true,
 		});
 		ScrollTrigger.addEventListener('scrollEnd', handleScrollEnd);
-		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleFreefallComplete, {
-			once: true,
-		});
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 
 		visorSequenceWindow.__visorSequenceCleanup = cleanup;
@@ -932,5 +919,11 @@ import RockFaceScene from './RockFaceScene.astro';
 	.goggle-reflection-secondary {
 		stroke: var(--yellow);
 		stroke-width: 2;
+	}
+
+	@media (max-width: 64rem) {
+		.goggle-frame {
+			filter: none;
+		}
 	}
 </style>

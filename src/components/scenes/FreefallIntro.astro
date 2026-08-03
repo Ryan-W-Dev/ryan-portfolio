@@ -11,7 +11,12 @@ const terrainPasses = [
 ] as const;
 ---
 
-<div class="freefall-intro" data-freefall-intro aria-hidden="true">
+<div
+	class="freefall-intro"
+	data-freefall-intro
+	data-intro-state="pending"
+	aria-hidden="true"
+>
 	<div class="freefall-world" data-freefall-world>
 		<div class="terrain-camera" data-terrain-camera>
 			{
@@ -128,7 +133,7 @@ const terrainPasses = [
 		block-size: 100svh;
 		overflow: hidden;
 		background: var(--ink);
-		animation: freefall-intro-fail-open 1ms linear 7s forwards;
+		animation: freefall-intro-fallback-complete 0.3s ease-out 4s forwards;
 		pointer-events: none;
 		touch-action: none;
 	}
@@ -137,11 +142,11 @@ const terrainPasses = [
 		display: none;
 	}
 
-	.freefall-intro[data-intro-state] {
+	.freefall-intro[data-intro-owner='gsap'] {
 		animation: none;
 	}
 
-	@keyframes freefall-intro-fail-open {
+	@keyframes freefall-intro-fallback-complete {
 		to {
 			opacity: 0;
 			visibility: hidden;
@@ -158,13 +163,10 @@ const terrainPasses = [
 	}
 
 	.freefall-world {
-		visibility: hidden;
-	}
-
-	.freefall-world {
 		--hero-reveal: 0%;
 		overflow: hidden;
 		background: var(--cobalt);
+		visibility: visible;
 		-webkit-mask-image: radial-gradient(
 			circle at 50% 50%,
 			transparent 0 var(--hero-reveal),
@@ -177,16 +179,35 @@ const terrainPasses = [
 		);
 	}
 
-	.freefall-intro[data-sequence-ready] {
+	.freefall-intro[data-intro-owner='gsap'] {
 		background: transparent;
-	}
-
-	.freefall-intro[data-sequence-ready] .freefall-world {
-		visibility: visible;
 	}
 
 	.terrain-camera {
 		transform: none;
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass {
+		animation: freefall-css-terrain 0.95s linear infinite;
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass:nth-child(even) {
+		animation-delay: -0.48s;
+	}
+
+	@keyframes freefall-css-terrain {
+		0% {
+			opacity: 0;
+			transform: scale(0.42);
+		}
+		18%,
+		72% {
+			opacity: 0.58;
+		}
+		100% {
+			opacity: 0;
+			transform: scale(4.6);
+		}
 	}
 
 	.terrain-pass {
@@ -226,6 +247,38 @@ const terrainPasses = [
 		block-size: 15vmax;
 		overflow: visible;
 		transform-origin: 50% 50%;
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass {
+		animation: freefall-css-cloud 0.72s linear infinite;
+		transform-origin: var(--fall-cloud-transform-origin);
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--two {
+		animation-delay: -0.18s;
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--three {
+		animation-delay: -0.36s;
+	}
+
+	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--four {
+		animation-delay: -0.54s;
+	}
+
+	@keyframes freefall-css-cloud {
+		0% {
+			opacity: 0;
+			transform: scale(0.08);
+		}
+		18%,
+		72% {
+			opacity: 0.32;
+		}
+		100% {
+			opacity: 0;
+			transform: scale(7.5);
+		}
 	}
 
 	.fall-cloud-body {
@@ -322,6 +375,19 @@ const terrainPasses = [
 		transform: rotate(334deg);
 	}
 
+	.freefall-intro:not([data-intro-owner='gsap']) .speed-burst {
+		animation: freefall-css-speed 0.52s ease-in-out infinite alternate;
+	}
+
+	@keyframes freefall-css-speed {
+		from {
+			opacity: 0.2;
+		}
+		to {
+			opacity: 0.48;
+		}
+	}
+
 	.freefall-vignette {
 		background:
 			radial-gradient(
@@ -370,6 +436,27 @@ const terrainPasses = [
 			inset-block-start: 70svh;
 			inset-inline-start: 60%;
 			transform: none;
+		}
+	}
+
+	@media (max-width: 64rem) {
+		.terrain-far,
+		.terrain-mid,
+		.terrain-near,
+		.fall-clouds {
+			filter: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.freefall-intro:not([data-intro-owner='gsap']) {
+			animation: freefall-intro-fallback-complete 0.2s linear 1.2s forwards;
+		}
+
+		.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass,
+		.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass,
+		.freefall-intro:not([data-intro-owner='gsap']) .speed-burst {
+			animation: none;
 		}
 	}
 </style>

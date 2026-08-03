@@ -4,65 +4,85 @@ interface Props {
 }
 
 const { depth } = Astro.props;
-const patternId = `cloud-halftone-${depth}`;
+const tiles = [0, 1] as const;
 ---
 
 <div class={`comic-cloud-track comic-cloud-track--${depth}`} aria-hidden="true">
-	<svg viewBox="0 0 2000 240" preserveAspectRatio="none" role="presentation">
-		<defs>
-			<pattern
-				id={patternId}
-				width="12"
-				height="12"
-				patternUnits="userSpaceOnUse"
-			>
-				<circle class="cloud-halftone-dot" cx="3" cy="3" r="1.8"></circle>
-			</pattern>
-			<g id={`cloud-copy-${depth}`}>
-				<path
-					class="cloud-body cloud-body--one"
-					d="M-70 174 C-22 132 38 128 76 148 C106 91 170 68 224 98 C274 42 370 46 408 108 C464 82 535 104 552 156 C490 198 352 212 207 204 C90 198 0 190-70 174Z"
-				></path>
-				<path
-					class="cloud-shadow"
-					d="M18 170 C92 151 122 164 176 177 C242 194 344 174 398 146 C432 128 477 133 519 160 C446 194 340 204 218 202 C128 199 54 190 18 170Z"
-				></path>
-				<path
-					class="cloud-body cloud-body--two"
-					d="M560 142 C612 112 658 116 692 137 C728 76 806 59 854 104 C900 58 975 69 1008 126 C1055 109 1114 126 1132 169 C1045 201 921 209 803 201 C696 195 618 180 560 142Z"
-				></path>
-				<path
-					class="cloud-ink-line"
-					d="M-30 169 C104 204 314 213 512 165 M602 161 C746 201 946 208 1100 168"
-				></path>
-			</g>
-		</defs>
+	<div class="comic-cloud-loop">
+		{
+			tiles.map((tile) => {
+				const patternId = `cloud-halftone-${depth}-${tile}`;
+				return (
+					<svg
+						class="comic-cloud-tile"
+						viewBox="0 0 1000 240"
+						preserveAspectRatio="none"
+						role="presentation"
+					>
+						<defs>
+							<pattern
+								id={patternId}
+								width="12"
+								height="12"
+								patternUnits="userSpaceOnUse"
+							>
+								<circle class="cloud-halftone-dot" cx="3" cy="3" r="1.8" />
+							</pattern>
+						</defs>
 
-		<use href={`#cloud-copy-${depth}`} x="-1000"></use>
-		<use href={`#cloud-copy-${depth}`}></use>
-		<use href={`#cloud-copy-${depth}`} x="1000"></use>
-		<use href={`#cloud-copy-${depth}`} x="2000"></use>
-	</svg>
+						<g transform="translate(60 0) scale(.82 1)">
+							<path
+								class="cloud-body cloud-body--one"
+								d="M-70 174 C-22 132 38 128 76 148 C106 91 170 68 224 98 C274 42 370 46 408 108 C464 82 535 104 552 156 C490 198 352 212 207 204 C90 198 0 190-70 174Z"
+							/>
+							<path
+								class="cloud-shadow"
+								style={`fill: url(#${patternId})`}
+								d="M18 170 C92 151 122 164 176 177 C242 194 344 174 398 146 C432 128 477 133 519 160 C446 194 340 204 218 202 C128 199 54 190 18 170Z"
+							/>
+							<path
+								class="cloud-body cloud-body--two"
+								d="M560 142 C612 112 658 116 692 137 C728 76 806 59 854 104 C900 58 975 69 1008 126 C1055 109 1114 126 1132 169 C1045 201 921 209 803 201 C696 195 618 180 560 142Z"
+							/>
+							<path
+								class="cloud-ink-line"
+								d="M-30 169 C104 204 314 213 512 165 M602 161 C746 201 946 208 1100 168"
+							/>
+						</g>
+					</svg>
+				);
+			})
+		}
+	</div>
 </div>
 
-<style define:vars={{ cloudHalftone: `url(#${patternId})` }}>
+<style>
 	.comic-cloud-track {
 		--cloud-fill: var(--cream-light);
 		--cloud-accent: var(--orange);
+		--cloud-tile-width: 100vw;
 		position: absolute;
 		inset-inline-start: 0;
-		inline-size: 200vw;
+		inline-size: 100%;
 		block-size: clamp(7rem, 18vh, 13rem);
-		animation: comic-cloud-loop 34s linear infinite;
-		animation-play-state: paused;
-		will-change: transform;
 	}
 
-	.comic-cloud-track svg {
-		display: block;
-		inline-size: 100%;
+	.comic-cloud-loop {
+		display: flex;
+		inline-size: max-content;
 		block-size: 100%;
-		overflow: visible;
+		animation: comic-cloud-loop 34s linear infinite;
+		animation-play-state: paused;
+		transform: translate3d(0, 0, 0);
+		will-change: auto;
+	}
+
+	.comic-cloud-tile {
+		display: block;
+		flex: 0 0 var(--cloud-tile-width);
+		inline-size: var(--cloud-tile-width);
+		block-size: 100%;
+		overflow: hidden;
 	}
 
 	.cloud-body {
@@ -81,7 +101,6 @@ const patternId = `cloud-halftone-${depth}`;
 	}
 
 	.cloud-shadow {
-		fill: var(--cloudHalftone);
 		opacity: 0.58;
 	}
 
@@ -98,6 +117,9 @@ const patternId = `cloud-halftone-${depth}`;
 		--cloud-accent: var(--cobalt);
 		inset-block-start: 13%;
 		block-size: clamp(4.5rem, 11vh, 8rem);
+	}
+
+	.comic-cloud-track--far .comic-cloud-loop {
 		animation-duration: 46s;
 	}
 
@@ -105,6 +127,9 @@ const patternId = `cloud-halftone-${depth}`;
 		--cloud-accent: var(--red);
 		inset-block-start: 28%;
 		block-size: clamp(6rem, 15vh, 10rem);
+	}
+
+	.comic-cloud-track--mid .comic-cloud-loop {
 		animation-duration: 35s;
 	}
 
@@ -112,26 +137,29 @@ const patternId = `cloud-halftone-${depth}`;
 		--cloud-fill: var(--cream-light);
 		--cloud-accent: var(--orange);
 		inset-block-start: 3%;
+	}
+
+	.comic-cloud-track--near .comic-cloud-loop {
 		animation-duration: 26s;
 	}
 
-	:global([data-clouds-active]) .comic-cloud-track {
+	:global([data-clouds-active]) .comic-cloud-loop {
 		animation-play-state: running;
+		will-change: transform;
 	}
 
 	@keyframes comic-cloud-loop {
-		/* Half the 200vw track is one repeated copy, so both boundary frames match. */
 		from {
 			transform: translate3d(0, 0, 0);
 		}
 		to {
-			transform: translate3d(-50%, 0, 0);
+			transform: translate3d(calc(-1 * var(--cloud-tile-width)), 0, 0);
 		}
 	}
 
 	@media (max-width: 40rem) {
 		.comic-cloud-track {
-			inline-size: 260vw;
+			--cloud-tile-width: 130vw;
 		}
 
 		.comic-cloud-track--far {
@@ -144,7 +172,7 @@ const patternId = `cloud-halftone-${depth}`;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.comic-cloud-track {
+		.comic-cloud-loop {
 			animation: none;
 			will-change: auto;
 		}
