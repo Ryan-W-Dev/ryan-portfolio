@@ -23,8 +23,12 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	</div>
 	<div class="route-mark" aria-hidden="true"></div>
 	<p id="transition-copy" data-transition-copy>
-		Whether I’m chasing adrenaline through extreme sports or bringing an idea to
-		life through technology, I’m driven by challenges.
+		<span data-transition-copy-text
+			>My path to web and software engineering started far from a desk. As a
+			semi-professional motocross racer, I learned to stay focused under
+			pressure, adapt quickly, and keep improving. Today, I bring that same
+			discipline and drive to building thoughtful, reliable digital experiences.</span
+		>
 	</p>
 </section>
 
@@ -168,9 +172,25 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		line-height: 0.93;
 		letter-spacing: -0.018em;
 		text-align: center;
-		text-transform: uppercase;
 		transform: rotate(-0.8deg);
 		will-change: transform, opacity;
+	}
+
+	p span {
+		display: block;
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: clamp(1.25rem, min(1.8vw, 2.7vh), 2rem);
+		font-weight: 600;
+		line-height: 1.45;
+		letter-spacing: 0.01em;
+		text-align: left;
+		text-transform: none;
+	}
+
+	@media (max-width: 48rem) {
+		p span {
+			font-size: clamp(1rem, min(4.8vw, 2.8vh), 1.35rem);
+		}
 	}
 
 	@media (max-width: 40rem) {
