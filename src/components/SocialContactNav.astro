@@ -128,10 +128,16 @@ const iconPaths: Record<Contact['icon'], string> = {
 		const footer = document.querySelector<HTMLElement>('[data-contact-footer]');
 		if (!nav || !compact || !footerList || !hero || !footer) return;
 
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 		let context: gsap.Context | undefined;
 		let timeline: gsap.core.Timeline | undefined;
+		let trigger: ScrollTrigger | undefined;
 		let resizeTimer = 0;
 		let buildFrame = 0;
+		let navFrame = 0;
+		let lastFrameTime = 0;
+		let targetProgress = 0;
+		let renderedProgress = 0;
 		let pendingBuild = false;
 		let gestureActive = false;
 		let footerInteractive = false;
@@ -154,15 +160,55 @@ const iconPaths: Record<Contact['icon'], string> = {
 		};
 
 		const revertTimeline = () => {
-			timeline?.scrollTrigger?.kill();
+			trigger?.kill();
+			trigger = undefined;
 			timeline?.kill();
 			context?.revert();
 			timeline = undefined;
 			context = undefined;
+			window.cancelAnimationFrame(navFrame);
+			navFrame = 0;
+			lastFrameTime = 0;
+		};
+
+		const renderNavigation = (timestamp: number) => {
+			navFrame = 0;
+			if (!timeline) return;
+			const elapsed = lastFrameTime
+				? Math.min(48, timestamp - lastFrameTime)
+				: 16;
+			lastFrameTime = timestamp;
+			const difference = targetProgress - renderedProgress;
+			const factor = 1 - Math.exp(-elapsed / 72);
+			renderedProgress += difference * factor;
+			if (Math.abs(difference) < 0.00015) renderedProgress = targetProgress;
+			timeline.progress(renderedProgress, false);
+			if (renderedProgress !== targetProgress) {
+				navFrame = window.requestAnimationFrame(renderNavigation);
+			} else {
+				lastFrameTime = 0;
+			}
+		};
+
+		const setNavigationProgress = (progress: number, immediate = false) => {
+			targetProgress = Math.max(0, Math.min(1, progress));
+			const atBoundary = targetProgress <= 0.0001 || targetProgress >= 0.9999;
+			if (immediate || atBoundary || reducedMotion.matches) {
+				renderedProgress = targetProgress;
+				timeline?.progress(renderedProgress, false);
+				window.cancelAnimationFrame(navFrame);
+				navFrame = 0;
+				lastFrameTime = 0;
+				return;
+			}
+			if (!navFrame) navFrame = window.requestAnimationFrame(renderNavigation);
 		};
 
 		const build = () => {
 			revertTimeline();
+			const visualViewport = window.visualViewport;
+			const viewportWidth = visualViewport?.width ?? window.innerWidth;
+			const viewportHeight = visualViewport?.height ?? window.innerHeight;
 			const styles = window.getComputedStyle(nav);
 			const safeStart =
 				Number.parseFloat(
@@ -183,23 +229,23 @@ const iconPaths: Record<Contact['icon'], string> = {
 			const compactHeight = compact.offsetHeight;
 			const footerWidth = footerList.offsetWidth;
 			const footerHeight = footerList.offsetHeight;
-			const centeredCompactX = (window.innerWidth - compactWidth) / 2;
+			const centeredCompactX = (viewportWidth - compactWidth) / 2;
 			const heroX = mobile
 				? Math.min(
 						Math.max(centeredCompactX, safeStart + inlinePadding),
-						window.innerWidth - safeEnd - compactWidth - inlinePadding,
+						viewportWidth - safeEnd - compactWidth - inlinePadding,
 					)
-				: Math.max(inlinePadding, window.innerWidth - compactWidth - 24);
+				: Math.max(inlinePadding, viewportWidth - compactWidth - 24);
 			const heroY = Math.max(
 				topOffset,
-				window.innerHeight - compactHeight - safeBottom - 42,
+				viewportHeight - compactHeight - safeBottom - 42,
 			);
 			const headerX = Math.max(0, centeredCompactX);
 			const headerY = topOffset;
-			const footerX = Math.max(0, (window.innerWidth - footerWidth) / 2);
+			const footerX = Math.max(0, (viewportWidth - footerWidth) / 2);
 			const footerY = Math.max(
 				topOffset,
-				window.innerHeight - footerHeight - safeBottom - 12,
+				viewportHeight - footerHeight - safeBottom - 12,
 			);
 			const maxScroll = Math.max(1, ScrollTrigger.maxScroll(window));
 			const heroEnd = Math.min(
@@ -209,17 +255,21 @@ const iconPaths: Record<Contact['icon'], string> = {
 					hero.getBoundingClientRect().top + window.scrollY + hero.offsetHeight,
 				),
 			);
+			const heroTravelEnd = Math.min(
+				maxScroll,
+				mobile ? heroEnd + viewportHeight * 0.75 : heroEnd,
+			);
 			const footerTop = footer.getBoundingClientRect().top + window.scrollY;
 			const footerStart = Math.min(
 				maxScroll - 1,
-				Math.max(heroEnd + 1, footerTop - window.innerHeight * 0.58),
+				Math.max(heroTravelEnd + 1, footerTop - viewportHeight * 0.58),
 			);
 			const footerDuration = Math.max(1, maxScroll - footerStart);
-			const holdDuration = Math.max(0, footerStart - heroEnd);
+			const holdDuration = Math.max(0, footerStart - heroTravelEnd);
 
 			hero.style.setProperty(
 				'--hero-contact-nav-clearance',
-				`${Math.max(0, window.innerHeight - heroY)}px`,
+				`${Math.max(0, viewportHeight - heroY)}px`,
 			);
 			nav.setAttribute('data-nav-ready', '');
 
@@ -239,32 +289,49 @@ const iconPaths: Record<Contact['icon'], string> = {
 					force3D: true,
 				});
 
-				timeline = gsap
-					.timeline({
-						defaults: { ease: 'none' },
-						scrollTrigger: {
-							id: NAV_TRIGGER_ID,
-							trigger: document.documentElement,
-							start: 0,
-							end: maxScroll,
-							scrub: ScrollTrigger.isTouch ? 0.28 : true,
-							onUpdate: (self) => {
-								setFooterInteractive(
-									self.scroll() >= footerStart + footerDuration * 0.5,
-								);
-							},
-							onRefresh: (self) => {
-								setFooterInteractive(
-									self.scroll() >= footerStart + footerDuration * 0.5,
-								);
-							},
+				if (reducedMotion.matches) {
+					gsap.set(compact, {
+						x: headerX,
+						y: headerY,
+						scale: 0.88,
+						autoAlpha: 1,
+						force3D: true,
+					});
+					gsap.set(footerList, {
+						x: footerX,
+						y: footerY,
+						scale: 1,
+						autoAlpha: 0,
+						force3D: true,
+					});
+					timeline = gsap
+						.timeline({ paused: true, defaults: { ease: 'none' } })
+						.to(compact, { autoAlpha: 0, duration: 1 }, 0)
+						.to(footerList, { autoAlpha: 1, duration: 1 }, 0);
+					trigger = ScrollTrigger.create({
+						id: NAV_TRIGGER_ID,
+						trigger: footer,
+						start: 'top 78%',
+						end: 'top 42%',
+						onUpdate: (self) => {
+							setNavigationProgress(self.progress, true);
+							setFooterInteractive(self.progress >= 0.5);
 						},
-					})
+						onRefresh: (self) => {
+							setNavigationProgress(self.progress, true);
+							setFooterInteractive(self.progress >= 0.5);
+						},
+					});
+					return;
+				}
+
+				timeline = gsap
+					.timeline({ paused: true, defaults: { ease: 'none' } })
 					.to(compact, {
 						x: headerX,
 						y: headerY,
 						scale: 0.88,
-						duration: heroEnd,
+						duration: heroTravelEnd,
 					})
 					.to({}, { duration: holdDuration })
 					.to(
@@ -289,6 +356,25 @@ const iconPaths: Record<Contact['icon'], string> = {
 						},
 						footerStart,
 					);
+
+				trigger = ScrollTrigger.create({
+					id: NAV_TRIGGER_ID,
+					trigger: document.documentElement,
+					start: 0,
+					end: maxScroll,
+					onUpdate: (self) => {
+						setNavigationProgress(self.progress);
+						setFooterInteractive(
+							self.scroll() >= footerStart + footerDuration * 0.5,
+						);
+					},
+					onRefresh: (self) => {
+						setNavigationProgress(self.progress, true);
+						setFooterInteractive(
+							self.scroll() >= footerStart + footerDuration * 0.5,
+						);
+					},
+				});
 			}, nav);
 
 			ScrollTrigger.refresh();
@@ -335,12 +421,15 @@ const iconPaths: Record<Contact['icon'], string> = {
 		const handleScrollEnd = () => {
 			if (pendingBuild && !gestureActive) scheduleBuild();
 		};
+		const handleMotionChange = () => scheduleBuild();
 
 		const cleanup = () => {
 			window.removeEventListener('resize', handleResize);
 			window.removeEventListener('pointerdown', handlePointerDown);
 			window.removeEventListener('pointerup', handlePointerUp);
 			window.removeEventListener('pointercancel', handlePointerUp);
+			window.visualViewport?.removeEventListener('resize', handleResize);
+			reducedMotion.removeEventListener('change', handleMotionChange);
 			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
 			document.removeEventListener('astro:before-swap', cleanup);
 			window.clearTimeout(resizeTimer);
@@ -354,6 +443,10 @@ const iconPaths: Record<Contact['icon'], string> = {
 
 		buildFrame = window.requestAnimationFrame(build);
 		window.addEventListener('resize', handleResize, { passive: true });
+		window.visualViewport?.addEventListener('resize', handleResize, {
+			passive: true,
+		});
+		reducedMotion.addEventListener('change', handleMotionChange);
 		window.addEventListener('pointerdown', handlePointerDown, {
 			passive: true,
 		});

@@ -63,58 +63,105 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		if (!scene || !clouds || !landscape || !grade || !content || !indicator)
 			return;
 
-		let visible = false;
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const topTolerance = 2;
 		let introComplete = scene.hasAttribute('data-intro-complete');
 		let context: gsap.Context | undefined;
+		let stateFrame = 0;
 		const update = () => {
-			const active = visible && introComplete && !document.hidden;
+			const atDocumentTop = window.scrollY <= topTolerance;
+			const sceneBounds = scene.getBoundingClientRect();
+			const heroInView =
+				sceneBounds.bottom > -topTolerance &&
+				sceneBounds.top < window.innerHeight + topTolerance;
+			const active =
+				!reducedMotion.matches &&
+				introComplete &&
+				!document.hidden &&
+				(heroInView || atDocumentTop);
 			clouds.toggleAttribute('data-clouds-active', active);
 			scene.toggleAttribute('data-hero-active', active);
 		};
-		const handleVisibility = () => update();
+		const requestUpdate = () => {
+			if (stateFrame) return;
+			stateFrame = window.requestAnimationFrame(() => {
+				stateFrame = 0;
+				update();
+			});
+		};
+		const handleVisibility = () => requestUpdate();
+		const handlePageShow = () => requestUpdate();
+		const handleViewportChange = () => requestUpdate();
 		const handleIntroComplete = () => {
 			introComplete = true;
-			update();
+			requestUpdate();
 		};
 
-		context = gsap.context(() => {
-			const timeline = gsap.timeline({
-				defaults: { ease: 'none' },
-				scrollTrigger: {
-					id: 'hero-to-transition-copy',
-					trigger: scene,
-					start: 'top top',
-					end: 'bottom top',
-					scrub: ScrollTrigger.isTouch ? 0.28 : true,
-					invalidateOnRefresh: true,
-					onToggle: (self) => {
-						visible = self.isActive;
-						update();
+		if (!reducedMotion.matches)
+			context = gsap.context(() => {
+				const timeline = gsap.timeline({
+					defaults: { ease: 'none' },
+					scrollTrigger: {
+						id: 'hero-to-transition-copy',
+						trigger: scene,
+						start: 'top top',
+						end: 'bottom top',
+						scrub: ScrollTrigger.isTouch ? 0.28 : true,
+						invalidateOnRefresh: true,
+						onToggle: () => {
+							requestUpdate();
+						},
+						onRefresh: () => {
+							requestUpdate();
+						},
 					},
-					onRefresh: (self) => {
-						visible =
-							self.isActive || (self.progress === 0 && window.scrollY === 0);
-						update();
-					},
-				},
-			});
+				});
 
-			timeline
-				.to(grade, { opacity: 0.78 }, 0)
-				.to(content, { yPercent: -13, autoAlpha: 0 }, 0.48)
-				.to(indicator, { yPercent: -28, autoAlpha: 0 }, 0.28);
-		}, scene);
+				timeline
+					.to(grade, { opacity: 0.78 }, 0)
+					.to(content, { yPercent: -13, autoAlpha: 0 }, 0.48)
+					.to(indicator, { yPercent: -28, autoAlpha: 0 }, 0.28);
+			}, scene);
+		else {
+			update();
+		}
+
+		const handleMotionChange = () => {
+			cleanup();
+			initialiseHeroClouds();
+			ScrollTrigger.refresh();
+		};
 
 		const cleanup = () => {
 			document.removeEventListener('visibilitychange', handleVisibility);
 			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
+			window.removeEventListener('scroll', requestUpdate);
+			window.removeEventListener('pageshow', handlePageShow);
+			window.removeEventListener('orientationchange', handleViewportChange);
+			window.removeEventListener('resize', handleViewportChange);
+			window.visualViewport?.removeEventListener(
+				'resize',
+				handleViewportChange,
+			);
+			reducedMotion.removeEventListener('change', handleMotionChange);
 			document.removeEventListener('astro:before-swap', cleanup);
+			window.cancelAnimationFrame(stateFrame);
 			context?.revert();
+			clouds.removeAttribute('data-clouds-active');
+			scene.removeAttribute('data-hero-active');
 			if (heroCloudWindow.__heroCloudCleanup === cleanup)
 				delete heroCloudWindow.__heroCloudCleanup;
 		};
 
 		document.addEventListener('visibilitychange', handleVisibility);
+		window.addEventListener('scroll', requestUpdate, { passive: true });
+		window.addEventListener('pageshow', handlePageShow);
+		window.addEventListener('orientationchange', handleViewportChange);
+		window.addEventListener('resize', handleViewportChange, { passive: true });
+		window.visualViewport?.addEventListener('resize', handleViewportChange, {
+			passive: true,
+		});
+		reducedMotion.addEventListener('change', handleMotionChange);
 		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
 			once: true,
 		});

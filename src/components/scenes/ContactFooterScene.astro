@@ -253,6 +253,11 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		const buildMotion = () => {
 			context?.revert();
 			restoreCursor();
+			if (reducedMotion.matches) {
+				setCursorReady(false);
+				gsap.set(cursorBike, { autoAlpha: 0, clearProps: 'transform' });
+				return;
+			}
 
 			context = gsap.context(() => {
 				gsap.set(cursorBike, {
@@ -478,7 +483,8 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.eye-lids {
+		.eye-lids,
+		.footer-cursor-bike {
 			display: none;
 		}
 	}

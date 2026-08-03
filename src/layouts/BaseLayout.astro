@@ -13,7 +13,7 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-intro-pending>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -58,6 +58,98 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 			href="/assets/hero/hero-desert.webp"
 			fetchpriority="high"
 		/>
+		<style is:inline>
+			html[data-intro-pending] {
+				overflow: hidden;
+				background: #061c38;
+			}
+
+			html[data-intro-pending] body {
+				overflow: hidden;
+				background: #061c38;
+			}
+
+			html[data-intro-pending] [data-freefall-intro] {
+				position: fixed;
+				z-index: 1000;
+				inset: 0;
+				inline-size: 100vw;
+				block-size: 100vh;
+				block-size: 100svh;
+				overflow: hidden;
+				background: #061c38;
+				opacity: 1;
+				visibility: visible;
+			}
+
+			html[data-intro-pending] [data-freefall-world] {
+				position: absolute;
+				inset: 0;
+				overflow: hidden;
+				background: #0759b6;
+			}
+
+			html[data-intro-pending] [data-arrival-content],
+			html[data-intro-pending] [data-scroll-indicator],
+			html[data-intro-pending] [data-social-flight],
+			html[data-intro-pending] [data-dirt-bike-guide] {
+				opacity: 0;
+				visibility: hidden;
+			}
+
+			html[data-intro-pending]
+				[data-freefall-intro]:not([data-intro-owner='gsap']) {
+				animation: critical-intro-fail-open 0.2s ease-out 5.05s forwards;
+			}
+
+			html[data-intro-pending] {
+				animation: critical-scroll-fail-open 1ms linear 5.25s forwards;
+			}
+
+			html[data-intro-pending] [data-arrival-content],
+			html[data-intro-pending] [data-scroll-indicator],
+			html[data-intro-pending] [data-social-flight] {
+				animation: critical-content-fail-open 1ms linear 5.25s forwards;
+			}
+
+			@keyframes critical-intro-fail-open {
+				to {
+					opacity: 0;
+					visibility: hidden;
+				}
+			}
+
+			@keyframes critical-scroll-fail-open {
+				to {
+					overflow: auto;
+				}
+			}
+
+			@keyframes critical-content-fail-open {
+				to {
+					opacity: 1;
+					visibility: visible;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				html[data-intro-pending]
+					[data-freefall-intro]:not([data-intro-owner='gsap']) {
+					animation-duration: 0.45s;
+					animation-delay: 0.45s;
+				}
+
+				html[data-intro-pending] {
+					animation-delay: 0.9s;
+				}
+
+				html[data-intro-pending] [data-arrival-content],
+				html[data-intro-pending] [data-scroll-indicator],
+				html[data-intro-pending] [data-social-flight] {
+					animation-delay: 0.9s;
+				}
+			}
+		</style>
 		<title>{title}</title>
 	</head>
 	<body>

@@ -350,4 +350,30 @@ const cards = [
 			filter: none;
 		}
 	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.card-sequence {
+			min-block-size: 0;
+			padding: clamp(4rem, 9vh, 7rem) var(--scene-gutter);
+		}
+
+		.card-viewport {
+			display: block;
+			block-size: auto;
+			overflow: visible;
+		}
+
+		.card-track {
+			display: grid;
+			gap: clamp(2rem, 6vh, 4rem);
+			inline-size: min(100%, 52rem);
+			padding: 0;
+			margin-inline: auto;
+		}
+
+		.extreme-card {
+			inline-size: 100%;
+			block-size: min(72svh, 40rem);
+		}
+	}
 </style>

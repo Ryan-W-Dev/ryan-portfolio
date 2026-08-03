@@ -14,12 +14,12 @@
 
 	const TOTAL_DURATION = 4;
 	const HERO_HANDOFF_START = 3.35;
-	const REDUCED_TOTAL_DURATION = 1.2;
-	const REDUCED_HERO_HANDOFF_START = 0.72;
+	const REDUCED_TOTAL_DURATION = 0.45;
+	const REDUCED_HERO_HANDOFF_START = 0;
 	const ASSET_READINESS_TIMEOUT_MS = 1500;
 	const STARTUP_WATCHDOG_MS = 5250;
-	const FALLBACK_DURATION_MS = 4000;
-	const REDUCED_FALLBACK_DURATION_MS = 1200;
+	const FALLBACK_DURATION_MS = 4300;
+	const REDUCED_FALLBACK_DURATION_MS = 900;
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	type IntroState =
 		| 'pending'
@@ -95,6 +95,7 @@
 	debugIntro('script-initialized');
 
 	const revealHeroContent = () => {
+		document.documentElement.removeAttribute('data-intro-pending');
 		const arrival = document.querySelector<HTMLElement>('[data-arrival-scene]');
 		arrival?.setAttribute('data-intro-complete', '');
 		for (const element of [
@@ -588,49 +589,64 @@
 					paused: true,
 					onComplete: () => completeIntro('timeline'),
 				});
-				timeline
-					.addLabel('terminal-velocity', 0)
-					.to(
-						clock,
-						{
-							elapsed: runDuration,
-							duration: runDuration,
-							ease: 'none',
-							onUpdate: () => renderPasses(clock.elapsed),
-						},
-						0,
-					)
-					.addLabel('hero-handoff', handoffStart)
-					.to(
-						world,
-						{
-							'--hero-reveal': '150%',
-							duration: runDuration - handoffStart,
-							ease: 'power3.inOut',
-						},
-						handoffStart,
-					)
-					.to(
-						title,
-						{
-							autoAlpha: 1,
-							yPercent: 0,
-							scale: 1,
-							duration: reducedMotion ? 0.32 : 0.48,
-							ease: 'power3.out',
-						},
-						handoffStart + (reducedMotion ? 0.06 : 0.11),
-					)
-					.to(
-						[subtitle, indicator],
-						{
-							autoAlpha: 1,
-							duration: reducedMotion ? 0.18 : 0.26,
-							ease: 'power2.out',
-						},
-						handoffStart + (reducedMotion ? 0.26 : 0.38),
-					)
-					.addLabel('intro-complete', runDuration);
+				if (reducedMotion) {
+					timeline
+						.addLabel('reduced-static-frame', 0)
+						.to(
+							intro,
+							{
+								autoAlpha: 0,
+								duration: REDUCED_TOTAL_DURATION,
+								ease: 'power1.inOut',
+							},
+							0,
+						)
+						.addLabel('intro-complete', REDUCED_TOTAL_DURATION);
+				} else {
+					timeline
+						.addLabel('terminal-velocity', 0)
+						.to(
+							clock,
+							{
+								elapsed: runDuration,
+								duration: runDuration,
+								ease: 'none',
+								onUpdate: () => renderPasses(clock.elapsed),
+							},
+							0,
+						)
+						.addLabel('hero-handoff', handoffStart)
+						.to(
+							world,
+							{
+								'--hero-reveal': '150%',
+								duration: runDuration - handoffStart,
+								ease: 'power3.inOut',
+							},
+							handoffStart,
+						)
+						.to(
+							title,
+							{
+								autoAlpha: 1,
+								yPercent: 0,
+								scale: 1,
+								duration: 0.48,
+								ease: 'power3.out',
+							},
+							handoffStart + 0.11,
+						)
+						.to(
+							[subtitle, indicator],
+							{
+								autoAlpha: 1,
+								duration: 0.26,
+								ease: 'power2.out',
+							},
+							handoffStart + 0.38,
+						)
+						.addLabel('intro-complete', runDuration);
+				}
 
 				timeline.totalTime(0, true);
 			}, intro);

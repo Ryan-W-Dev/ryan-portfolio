@@ -450,13 +450,23 @@ const terrainPasses = [
 
 	@media (prefers-reduced-motion: reduce) {
 		.freefall-intro:not([data-intro-owner='gsap']) {
-			animation: freefall-intro-fallback-complete 0.2s linear 1.2s forwards;
+			animation: freefall-intro-fallback-complete 0.45s ease-in-out 0.45s
+				forwards;
 		}
 
 		.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass,
 		.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass,
 		.freefall-intro:not([data-intro-owner='gsap']) .speed-burst {
 			animation: none;
+		}
+
+		.terrain-camera picture:not(:first-child),
+		.speed-burst {
+			display: none;
+		}
+
+		.fall-cloud-pass {
+			opacity: 0.72;
 		}
 	}
 </style>

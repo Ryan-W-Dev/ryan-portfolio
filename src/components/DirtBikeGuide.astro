@@ -317,16 +317,6 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 			// The shared document state makes the guide/cursor bike handoff mutually exclusive.
 			const opacity = footerCursorActive ? 0 : visibilityAt(progress);
 
-			if (reducedMotion.matches) {
-				gsap.set(guide, {
-					x: edgeContactAt(90).leftX,
-					y: window.innerHeight * 0.62,
-					rotation: 90,
-					opacity: opacity * 0.7,
-				});
-				return;
-			}
-
 			gsap.set(guide, {
 				x,
 				y,
@@ -343,11 +333,15 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 
 		const build = () => {
 			trigger?.kill();
-			buildRoute();
+			trigger = undefined;
 			if (reducedMotion.matches) {
 				guide.dataset.reducedMotion = '';
+				gsap.set(guide, { autoAlpha: 0, clearProps: 'transform' });
 				gsap.set([wheels, suspension], { clearProps: 'transform' });
-			} else delete guide.dataset.reducedMotion;
+				return;
+			}
+			delete guide.dataset.reducedMotion;
+			buildRoute();
 
 			trigger = ScrollTrigger.create({
 				id: 'dirt-bike-page-guide',
@@ -426,7 +420,14 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 	}
 
 	.dirt-bike-guide[data-reduced-motion] {
+		display: none;
 		will-change: auto;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.dirt-bike-guide {
+			display: none;
+		}
 	}
 
 	:global(html[data-footer-cursor-bike-active]) .dirt-bike-guide {

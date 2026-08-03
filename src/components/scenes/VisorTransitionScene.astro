@@ -155,6 +155,7 @@ import RockFaceScene from './RockFaceScene.astro';
 			return;
 		}
 
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 		ScrollTrigger.getById(VISOR_SEQUENCE_TRIGGER_ID)?.kill();
 
 		const horizontalTravel = () =>
@@ -290,6 +291,29 @@ import RockFaceScene from './RockFaceScene.astro';
 			const builtDuringInteraction =
 				gestureActive || ScrollTrigger.isScrolling();
 			revertTimeline();
+			if (reducedMotion.matches) {
+				sequence.dataset.reducedMotion = '';
+				stopAnimationMeasurement();
+				gsap.set(
+					[
+						track,
+						cardViewport,
+						...cardCopy,
+						finalCard,
+						visorWindow,
+						revealSurface,
+						rockScene,
+						aboutStatement,
+						aboutCopy,
+						goggleFrame,
+						primaryReflection,
+						secondaryReflection,
+					],
+					{ clearProps: 'all' },
+				);
+				return;
+			}
+			delete sequence.dataset.reducedMotion;
 
 			const travelDistance = horizontalTravel();
 			const settleDistance = viewportDistance(FINAL_CARD_SETTLE_VIEWPORT_RATIO);
@@ -748,6 +772,7 @@ import RockFaceScene from './RockFaceScene.astro';
 		const handleScrollEnd = () => {
 			if (pendingRebuild && !gestureActive) scheduleRebuild();
 		};
+		const handleMotionChange = () => scheduleRebuild();
 
 		const handlePointerDown = (event: PointerEvent) => {
 			if (event.pointerType === 'touch') gestureActive = true;
@@ -770,6 +795,7 @@ import RockFaceScene from './RockFaceScene.astro';
 			window.removeEventListener('pointerup', handlePointerUp);
 			window.removeEventListener('pointercancel', handlePointerUp);
 			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
+			reducedMotion.removeEventListener('change', handleMotionChange);
 			document.removeEventListener('astro:before-swap', cleanup);
 
 			window.clearTimeout(resizeTimer);
@@ -793,6 +819,7 @@ import RockFaceScene from './RockFaceScene.astro';
 			passive: true,
 		});
 		ScrollTrigger.addEventListener('scrollEnd', handleScrollEnd);
+		reducedMotion.addEventListener('change', handleMotionChange);
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 
 		visorSequenceWindow.__visorSequenceCleanup = cleanup;
@@ -924,6 +951,71 @@ import RockFaceScene from './RockFaceScene.astro';
 	@media (max-width: 64rem) {
 		.goggle-frame {
 			filter: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.visor-sequence {
+			background: var(--cream);
+		}
+
+		.visor-stage {
+			display: block;
+			block-size: auto;
+			overflow: visible;
+			isolation: auto;
+		}
+
+		.visor-stage :global([data-card-scene]) {
+			position: relative;
+			inset: auto;
+			block-size: auto;
+			min-block-size: 0;
+		}
+
+		.visor-window {
+			position: relative;
+			z-index: auto;
+			inset: auto;
+			inline-size: 100%;
+			block-size: auto;
+			overflow: visible;
+			border: 0;
+			border-radius: 0;
+			background: transparent;
+			box-shadow: none;
+			opacity: 1 !important;
+			visibility: visible !important;
+			translate: none;
+			transform: none !important;
+			contain: none;
+		}
+
+		.visor-reveal-surface {
+			position: relative;
+			inset: auto;
+			inline-size: 100%;
+			block-size: auto;
+			translate: none;
+			transform: none !important;
+		}
+
+		.visor-reveal-surface :global([data-rock-scene]) {
+			position: relative;
+			inset: auto;
+			block-size: 100svh;
+			min-block-size: 100svh;
+		}
+
+		.visor-reveal-surface :global([data-about-statement]),
+		.visor-reveal-surface :global([data-about-copy]) {
+			opacity: 1 !important;
+			visibility: visible !important;
+			transform: none !important;
+		}
+
+		.goggle-transition {
+			display: none;
 		}
 	}
 </style>
