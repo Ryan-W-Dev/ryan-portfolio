@@ -16,7 +16,10 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 <html lang="en" data-intro-pending>
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, viewport-fit=cover"
+		/>
 		<meta name="description" content={description} />
 		<meta name="theme-color" content="#061c38" />
 		<meta name="generator" content={Astro.generator} />
@@ -75,7 +78,8 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 				inset: 0;
 				inline-size: 100vw;
 				block-size: 100vh;
-				block-size: 100svh;
+				block-size: 100lvh;
+				min-block-size: 100dvh;
 				overflow: hidden;
 				background: transparent;
 				opacity: 1;
@@ -86,7 +90,8 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 				position: absolute;
 				inset: 0;
 				overflow: hidden;
-				background: #0759b6;
+				background: #0759b6 url('/assets/freefall/freefall-environment.webp')
+					center / cover no-repeat;
 			}
 
 			html[data-intro-pending] [data-arrival-content],
@@ -147,6 +152,12 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 				html[data-intro-pending] [data-scroll-indicator],
 				html[data-intro-pending] [data-social-flight] {
 					animation-delay: 0.9s;
+				}
+			}
+
+			@media (max-width: 64rem) {
+				html[data-intro-pending] [data-freefall-world] {
+					background-image: url('/assets/freefall/freefall-environment-mobile.webp');
 				}
 			}
 		</style>

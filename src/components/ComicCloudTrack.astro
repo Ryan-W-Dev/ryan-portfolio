@@ -73,8 +73,9 @@ const tiles = [0, 1] as const;
 		block-size: 100%;
 		animation: comic-cloud-loop 34s linear infinite;
 		animation-play-state: paused;
+		backface-visibility: hidden;
 		transform: translate3d(0, 0, 0);
-		will-change: auto;
+		will-change: transform;
 	}
 
 	.comic-cloud-tile {
@@ -83,6 +84,8 @@ const tiles = [0, 1] as const;
 		inline-size: var(--cloud-tile-width);
 		block-size: 100%;
 		overflow: hidden;
+		backface-visibility: hidden;
+		transform: translateZ(0);
 	}
 
 	.cloud-body {
@@ -145,7 +148,6 @@ const tiles = [0, 1] as const;
 
 	:global([data-clouds-active]) .comic-cloud-loop {
 		animation-play-state: running;
-		will-change: transform;
 	}
 
 	@keyframes comic-cloud-loop {
@@ -153,7 +155,7 @@ const tiles = [0, 1] as const;
 			transform: translate3d(0, 0, 0);
 		}
 		to {
-			transform: translate3d(calc(-1 * var(--cloud-tile-width)), 0, 0);
+			transform: translate3d(-50%, 0, 0);
 		}
 	}
 
@@ -174,6 +176,7 @@ const tiles = [0, 1] as const;
 	@media (prefers-reduced-motion: reduce) {
 		.comic-cloud-loop {
 			animation: none;
+			transform: none;
 			will-change: auto;
 		}
 	}

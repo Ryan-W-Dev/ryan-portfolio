@@ -120,6 +120,12 @@ button:focus-visible,
 	}
 }
 
+@media (max-width: 64rem) {
+	html {
+		scrollbar-gutter: auto;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;

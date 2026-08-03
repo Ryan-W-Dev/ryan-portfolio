@@ -514,29 +514,29 @@
 							? {
 									cycleDuration: 1.45,
 									startScale: 0.58,
-									endScale: reducedMotion ? 1.18 : 3.6,
-									maxOpacity: 0.72,
+									endScale: reducedMotion ? 1.18 : 1.35,
+									maxOpacity: 0.24,
 								}
 							: family === 'terrain-mid'
 								? {
 										cycleDuration: 1.05,
 										startScale: 0.38,
-										endScale: reducedMotion ? 1.22 : 5.4,
-										maxOpacity: 0.66,
+										endScale: reducedMotion ? 1.22 : 1.65,
+										maxOpacity: 0.18,
 									}
 								: family === 'terrain-near'
 									? {
 											cycleDuration: 0.78,
 											startScale: 0.2,
-											endScale: reducedMotion ? 1.3 : 7.2,
-											maxOpacity: 0.54,
+											endScale: reducedMotion ? 1.3 : 2,
+											maxOpacity: 0.14,
 										}
 									: family === 'cloud'
 										? {
-												cycleDuration: 0.68,
-												startScale: 0.08,
-												endScale: reducedMotion ? 1.25 : 8.5,
-												maxOpacity: 0.32,
+												cycleDuration: 6,
+												startScale: 0.65,
+												endScale: 1.65,
+												maxOpacity: 0.22,
 											}
 										: {
 												cycleDuration: 0.52,
