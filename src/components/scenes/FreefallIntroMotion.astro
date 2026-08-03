@@ -545,21 +545,14 @@
 												maxOpacity: 0.34,
 											};
 
-					const transformOrigin =
-						window
-							.getComputedStyle(target)
-							.getPropertyValue('--fall-cloud-transform-origin')
-							.trim() || '50% 50%';
-
 					gsap.set(target, {
-						transformOrigin,
 						willChange: 'transform, opacity',
 					});
 					return {
 						target,
 						initialPhase,
 						...settings,
-						setScale: gsap.quickSetter(target, 'scale') as (
+						setScale: gsap.quickSetter(target, '--pass-scale') as (
 							value: number,
 						) => void,
 						setOpacity: gsap.quickSetter(target, 'opacity') as (

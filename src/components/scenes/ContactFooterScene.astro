@@ -3,10 +3,11 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 ---
 
 <footer class="scene contact-footer" data-contact-footer>
-	<div
-		class="footer-portrait-frame footer-portrait-frame--desktop"
-		aria-hidden="true"
-	>
+	<picture class="footer-portrait-frame" aria-hidden="true">
+		<source
+			media="(max-width: 56rem)"
+			srcset="/assets/footer/footer-racer-ryan-mobile-v04.webp"
+		/>
 		<img
 			src="/assets/footer/footer-racer-ryan-v04.webp"
 			alt=""
@@ -16,21 +17,7 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 			decoding="async"
 			draggable="false"
 		/>
-	</div>
-	<div
-		class="footer-portrait-frame footer-portrait-frame--mobile"
-		aria-hidden="true"
-	>
-		<img
-			src="/assets/footer/footer-racer-ryan-mobile-v04.webp"
-			alt=""
-			width="900"
-			height="1200"
-			loading="lazy"
-			decoding="async"
-			draggable="false"
-		/>
-	</div>
+	</picture>
 
 	<svg
 		class="eye-overlay eye-overlay--desktop"
@@ -399,7 +386,6 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		user-select: none;
 	}
 
-	.footer-portrait-frame--mobile,
 	.eye-overlay--mobile {
 		display: none;
 	}
@@ -457,12 +443,10 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 	}
 
 	@media (max-width: 56rem) {
-		.footer-portrait-frame--desktop,
 		.eye-overlay--desktop {
 			display: none;
 		}
 
-		.footer-portrait-frame--mobile,
 		.eye-overlay--mobile {
 			display: block;
 		}

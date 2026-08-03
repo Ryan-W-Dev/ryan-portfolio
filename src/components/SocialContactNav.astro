@@ -109,10 +109,9 @@ const iconPaths: Record<Contact['icon'], string> = {
 
 <script>
 	import { gsap } from 'gsap';
-	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	type NavigationState = 'hero' | 'content' | 'footer';
+	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 
-	gsap.registerPlugin(ScrollTrigger);
-	const NAV_TRIGGER_ID = 'social-flight-controller';
 	const socialWindow = window as Window & {
 		__socialFlightCleanup?: () => void;
 	};
@@ -129,86 +128,143 @@ const iconPaths: Record<Contact['icon'], string> = {
 		if (!nav || !compact || !footerList || !hero || !footer) return;
 
 		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-		let context: gsap.Context | undefined;
-		let timeline: gsap.core.Timeline | undefined;
-		let trigger: ScrollTrigger | undefined;
-		let resizeTimer = 0;
-		let buildFrame = 0;
-		let navFrame = 0;
-		let lastFrameTime = 0;
-		let targetProgress = 0;
-		let renderedProgress = 0;
-		let pendingBuild = false;
-		let gestureActive = false;
-		let footerInteractive = false;
-		let viewport = {
-			width: window.innerWidth,
-			height: window.innerHeight,
-			portrait: window.innerHeight > window.innerWidth,
-			breakpoint: window.innerWidth <= 640 ? 'mobile' : 'large',
+		let transition: gsap.core.Timeline | undefined;
+		let stateFrame = 0;
+		let resizeFrame = 0;
+		let settleFrame = 0;
+		let currentState: NavigationState | undefined;
+		let heroPosition = { x: 0, y: 0 };
+		let contentPosition = { x: 0, y: 0 };
+		let footerPosition = { x: 0, y: 0 };
+
+		const setInteractiveState = (state?: NavigationState) => {
+			const footerActive = state === 'footer';
+			const compactActive = state === 'hero' || state === 'content';
+			compact.toggleAttribute('inert', !compactActive);
+			compact.setAttribute('aria-hidden', String(!compactActive));
+			footerList.toggleAttribute('inert', !footerActive);
+			footerList.setAttribute('aria-hidden', String(!footerActive));
+			footerList.toggleAttribute('data-contact-active', footerActive);
+			nav.toggleAttribute('data-footer-mode', footerActive);
 		};
 
-		const setFooterInteractive = (active: boolean) => {
-			if (active === footerInteractive) return;
-			footerInteractive = active;
-			compact.toggleAttribute('inert', active);
-			compact.setAttribute('aria-hidden', String(active));
-			footerList.toggleAttribute('inert', !active);
-			footerList.setAttribute('aria-hidden', String(!active));
-			footerList.toggleAttribute('data-contact-active', active);
-			nav.toggleAttribute('data-footer-mode', active);
+		const positionFor = (state: NavigationState) =>
+			state === 'hero' ? heroPosition : contentPosition;
+
+		const finishTransition = (state: NavigationState) => {
+			delete nav.dataset.navTransitioning;
+			gsap.set([compact, footerList], { willChange: 'auto' });
+			setInteractiveState(state);
 		};
 
-		const revertTimeline = () => {
-			trigger?.kill();
-			trigger = undefined;
-			timeline?.kill();
-			context?.revert();
-			timeline = undefined;
-			context = undefined;
-			window.cancelAnimationFrame(navFrame);
-			navFrame = 0;
-			lastFrameTime = 0;
-		};
+		const applyState = (state: NavigationState, immediate = false) => {
+			if (state === currentState && !immediate) return;
+			transition?.kill();
+			transition = undefined;
+			const previousState = currentState;
+			currentState = state;
+			nav.dataset.navState = state;
 
-		const renderNavigation = (timestamp: number) => {
-			navFrame = 0;
-			if (!timeline) return;
-			const elapsed = lastFrameTime
-				? Math.min(48, timestamp - lastFrameTime)
-				: 16;
-			lastFrameTime = timestamp;
-			const difference = targetProgress - renderedProgress;
-			const factor = 1 - Math.exp(-elapsed / 72);
-			renderedProgress += difference * factor;
-			if (Math.abs(difference) < 0.00015) renderedProgress = targetProgress;
-			timeline.progress(renderedProgress, false);
-			if (renderedProgress !== targetProgress) {
-				navFrame = window.requestAnimationFrame(renderNavigation);
-			} else {
-				lastFrameTime = 0;
-			}
-		};
-
-		const setNavigationProgress = (progress: number, immediate = false) => {
-			targetProgress = Math.max(0, Math.min(1, progress));
-			const atBoundary = targetProgress <= 0.0001 || targetProgress >= 0.9999;
-			if (immediate || atBoundary || reducedMotion.matches) {
-				renderedProgress = targetProgress;
-				timeline?.progress(renderedProgress, false);
-				window.cancelAnimationFrame(navFrame);
-				navFrame = 0;
-				lastFrameTime = 0;
+			const compactPosition = positionFor(state);
+			if (immediate || reducedMotion.matches) {
+				gsap.set(compact, {
+					...compactPosition,
+					scale: state === 'hero' ? 1 : 0.88,
+					autoAlpha: state === 'footer' ? 0 : 1,
+					force3D: true,
+				});
+				gsap.set(footerList, {
+					...footerPosition,
+					scale: 1,
+					autoAlpha: state === 'footer' ? 1 : 0,
+					force3D: true,
+				});
+				finishTransition(state);
 				return;
 			}
-			if (!navFrame) navFrame = window.requestAnimationFrame(renderNavigation);
+
+			nav.dataset.navTransitioning = '';
+			setInteractiveState();
+			gsap.set([compact, footerList], {
+				willChange: 'transform, opacity',
+			});
+
+			if (state === 'footer') {
+				gsap.set(footerList, { ...footerPosition, scale: 1, force3D: true });
+				transition = gsap
+					.timeline({ onComplete: () => finishTransition(state) })
+					.to(compact, { autoAlpha: 0, duration: 0.12, ease: 'power1.out' }, 0)
+					.to(
+						footerList,
+						{ autoAlpha: 1, duration: 0.16, ease: 'power1.inOut' },
+						0,
+					);
+				return;
+			}
+
+			if (previousState === 'footer') {
+				gsap.set(compact, {
+					...compactPosition,
+					scale: state === 'hero' ? 1 : 0.88,
+					force3D: true,
+				});
+				transition = gsap
+					.timeline({ onComplete: () => finishTransition(state) })
+					.to(
+						footerList,
+						{
+							autoAlpha: 0,
+							duration: 0.12,
+							ease: 'power1.out',
+						},
+						0,
+					)
+					.to(
+						compact,
+						{ autoAlpha: 1, duration: 0.16, ease: 'power1.inOut' },
+						0,
+					);
+				return;
+			}
+
+			transition = gsap
+				.timeline({ onComplete: () => finishTransition(state) })
+				.to(compact, { autoAlpha: 0, duration: 0.08, ease: 'power1.out' })
+				.set(compact, {
+					...compactPosition,
+					scale: state === 'hero' ? 1 : 0.88,
+					force3D: true,
+				})
+				.to(compact, { autoAlpha: 1, duration: 0.12, ease: 'power1.in' });
 		};
 
-		const build = () => {
-			revertTimeline();
+		const getState = (): NavigationState => {
+			const viewportHeight =
+				window.visualViewport?.height ?? window.innerHeight;
+			const footerBounds = footer.getBoundingClientRect();
+			if (footerBounds.top < viewportHeight && footerBounds.bottom > 0)
+				return 'footer';
+			const heroBounds = hero.getBoundingClientRect();
+			return heroBounds.top < -1 ? 'content' : 'hero';
+		};
+
+		const updateState = (immediate = false) => {
+			stateFrame = 0;
+			applyState(getState(), immediate);
+		};
+
+		const requestStateUpdate = () => {
+			if (!stateFrame) {
+				stateFrame = window.requestAnimationFrame(() => updateState());
+			}
+		};
+
+		const measure = () => {
 			const visualViewport = window.visualViewport;
 			const viewportWidth = visualViewport?.width ?? window.innerWidth;
 			const viewportHeight = visualViewport?.height ?? window.innerHeight;
+			const viewportLeft = visualViewport?.offsetLeft ?? 0;
+			const viewportTop = visualViewport?.offsetTop ?? 0;
 			const styles = window.getComputedStyle(nav);
 			const safeStart =
 				Number.parseFloat(
@@ -222,6 +278,10 @@ const iconPaths: Record<Contact['icon'], string> = {
 				Number.parseFloat(
 					styles.getPropertyValue('--contact-safe-block-end'),
 				) || 0;
+			const safeTop =
+				Number.parseFloat(
+					styles.getPropertyValue('--contact-safe-block-start'),
+				) || 0;
 			const mobile = window.matchMedia('(max-width: 40rem)').matches;
 			const topOffset = mobile ? 11 : 16;
 			const inlinePadding = 12;
@@ -229,232 +289,110 @@ const iconPaths: Record<Contact['icon'], string> = {
 			const compactHeight = compact.offsetHeight;
 			const footerWidth = footerList.offsetWidth;
 			const footerHeight = footerList.offsetHeight;
-			const centeredCompactX = (viewportWidth - compactWidth) / 2;
+			const centeredCompactX =
+				viewportLeft + (viewportWidth - compactWidth) / 2;
 			const heroX = mobile
 				? Math.min(
-						Math.max(centeredCompactX, safeStart + inlinePadding),
-						viewportWidth - safeEnd - compactWidth - inlinePadding,
+						Math.max(
+							centeredCompactX,
+							viewportLeft + safeStart + inlinePadding,
+						),
+						viewportLeft +
+							viewportWidth -
+							safeEnd -
+							compactWidth -
+							inlinePadding,
 					)
-				: Math.max(inlinePadding, viewportWidth - compactWidth - 24);
+				: Math.max(
+						viewportLeft + inlinePadding,
+						viewportLeft + viewportWidth - compactWidth - 24,
+					);
 			const heroY = Math.max(
-				topOffset,
-				viewportHeight - compactHeight - safeBottom - 42,
+				viewportTop + topOffset,
+				viewportTop + viewportHeight - compactHeight - safeBottom - 42,
 			);
-			const headerX = Math.max(0, centeredCompactX);
-			const headerY = topOffset;
-			const footerX = Math.max(0, (viewportWidth - footerWidth) / 2);
+			const headerX = Math.max(viewportLeft, centeredCompactX);
+			const headerY = viewportTop + safeTop + topOffset;
+			const footerX = Math.max(
+				viewportLeft,
+				viewportLeft + (viewportWidth - footerWidth) / 2,
+			);
 			const footerY = Math.max(
-				topOffset,
-				viewportHeight - footerHeight - safeBottom - 12,
+				viewportTop + topOffset,
+				viewportTop + viewportHeight - footerHeight - safeBottom - 12,
 			);
-			const maxScroll = Math.max(1, ScrollTrigger.maxScroll(window));
-			const heroEnd = Math.min(
-				maxScroll,
-				Math.max(
-					1,
-					hero.getBoundingClientRect().top + window.scrollY + hero.offsetHeight,
-				),
-			);
-			const heroTravelEnd = Math.min(
-				maxScroll,
-				mobile ? heroEnd + viewportHeight * 0.75 : heroEnd,
-			);
-			const footerTop = footer.getBoundingClientRect().top + window.scrollY;
-			const footerStart = Math.min(
-				maxScroll - 1,
-				Math.max(heroTravelEnd + 1, footerTop - viewportHeight * 0.58),
-			);
-			const footerDuration = Math.max(1, maxScroll - footerStart);
-			const holdDuration = Math.max(0, footerStart - heroTravelEnd);
+			heroPosition = { x: heroX, y: heroY };
+			contentPosition = { x: headerX, y: headerY };
+			footerPosition = { x: footerX, y: footerY };
 
 			hero.style.setProperty(
 				'--hero-contact-nav-clearance',
-				`${Math.max(0, viewportHeight - heroY)}px`,
+				`${Math.max(0, viewportTop + viewportHeight - heroY)}px`,
 			);
 			nav.setAttribute('data-nav-ready', '');
-
-			context = gsap.context(() => {
-				gsap.set(compact, {
-					x: heroX,
-					y: heroY,
-					scale: 1,
-					autoAlpha: 1,
-					force3D: true,
-				});
-				gsap.set(footerList, {
-					x: footerX,
-					y: headerY,
-					scale: 0.9,
-					autoAlpha: 0,
-					force3D: true,
-				});
-
-				if (reducedMotion.matches) {
-					gsap.set(compact, {
-						x: headerX,
-						y: headerY,
-						scale: 0.88,
-						autoAlpha: 1,
-						force3D: true,
-					});
-					gsap.set(footerList, {
-						x: footerX,
-						y: footerY,
-						scale: 1,
-						autoAlpha: 0,
-						force3D: true,
-					});
-					timeline = gsap
-						.timeline({ paused: true, defaults: { ease: 'none' } })
-						.to(compact, { autoAlpha: 0, duration: 1 }, 0)
-						.to(footerList, { autoAlpha: 1, duration: 1 }, 0);
-					trigger = ScrollTrigger.create({
-						id: NAV_TRIGGER_ID,
-						trigger: footer,
-						start: 'top 78%',
-						end: 'top 42%',
-						onUpdate: (self) => {
-							setNavigationProgress(self.progress, true);
-							setFooterInteractive(self.progress >= 0.5);
-						},
-						onRefresh: (self) => {
-							setNavigationProgress(self.progress, true);
-							setFooterInteractive(self.progress >= 0.5);
-						},
-					});
-					return;
-				}
-
-				timeline = gsap
-					.timeline({ paused: true, defaults: { ease: 'none' } })
-					.to(compact, {
-						x: headerX,
-						y: headerY,
-						scale: 0.88,
-						duration: heroTravelEnd,
-					})
-					.to({}, { duration: holdDuration })
-					.to(
-						compact,
-						{
-							x: footerX + (footerWidth - compactWidth) / 2,
-							y: footerY,
-							scale: 0.92,
-							autoAlpha: 0,
-							duration: footerDuration,
-						},
-						footerStart,
-					)
-					.to(
-						footerList,
-						{
-							x: footerX,
-							y: footerY,
-							scale: 1,
-							autoAlpha: 1,
-							duration: footerDuration,
-						},
-						footerStart,
-					);
-
-				trigger = ScrollTrigger.create({
-					id: NAV_TRIGGER_ID,
-					trigger: document.documentElement,
-					start: 0,
-					end: maxScroll,
-					onUpdate: (self) => {
-						setNavigationProgress(self.progress);
-						setFooterInteractive(
-							self.scroll() >= footerStart + footerDuration * 0.5,
-						);
-					},
-					onRefresh: (self) => {
-						setNavigationProgress(self.progress, true);
-						setFooterInteractive(
-							self.scroll() >= footerStart + footerDuration * 0.5,
-						);
-					},
-				});
-			}, nav);
-
-			ScrollTrigger.refresh();
-		};
-
-		const rebuildWhenIdle = () => {
-			window.clearTimeout(resizeTimer);
-			resizeTimer = 0;
-			if (!pendingBuild || gestureActive || ScrollTrigger.isScrolling()) return;
-			pendingBuild = false;
-			build();
-		};
-
-		const scheduleBuild = () => {
-			pendingBuild = true;
-			window.clearTimeout(resizeTimer);
-			resizeTimer = window.setTimeout(rebuildWhenIdle, 220);
+			applyState(getState(), true);
 		};
 
 		const handleResize = () => {
-			const next = {
-				width: window.innerWidth,
-				height: window.innerHeight,
-				portrait: window.innerHeight > window.innerWidth,
-				breakpoint: window.innerWidth <= 640 ? 'mobile' : 'large',
-			};
-			const meaningful =
-				Math.abs(next.width - viewport.width) >= 1 ||
-				next.portrait !== viewport.portrait ||
-				next.breakpoint !== viewport.breakpoint ||
-				(next.width > 768 && Math.abs(next.height - viewport.height) >= 1);
-			viewport = next;
-			if (meaningful) scheduleBuild();
+			window.cancelAnimationFrame(resizeFrame);
+			resizeFrame = window.requestAnimationFrame(() => {
+				resizeFrame = window.requestAnimationFrame(measure);
+			});
 		};
-
-		const handlePointerDown = (event: PointerEvent) => {
-			if (event.pointerType === 'touch') gestureActive = true;
+		const handleIntroComplete = () => {
+			nav.setAttribute('data-nav-settling', '');
+			window.cancelAnimationFrame(settleFrame);
+			settleFrame = window.requestAnimationFrame(() => {
+				settleFrame = window.requestAnimationFrame(() => {
+					measure();
+					nav.removeAttribute('data-nav-settling');
+				});
+			});
 		};
-		const handlePointerUp = (event: PointerEvent) => {
-			if (event.pointerType !== 'touch') return;
-			gestureActive = false;
-			if (pendingBuild) scheduleBuild();
-		};
-		const handleScrollEnd = () => {
-			if (pendingBuild && !gestureActive) scheduleBuild();
-		};
-		const handleMotionChange = () => scheduleBuild();
+		const handleMotionChange = () => applyState(getState(), true);
+		const viewportObserver = new ResizeObserver(handleResize);
 
 		const cleanup = () => {
+			window.removeEventListener('scroll', requestStateUpdate);
 			window.removeEventListener('resize', handleResize);
-			window.removeEventListener('pointerdown', handlePointerDown);
-			window.removeEventListener('pointerup', handlePointerUp);
-			window.removeEventListener('pointercancel', handlePointerUp);
 			window.visualViewport?.removeEventListener('resize', handleResize);
+			window.visualViewport?.removeEventListener('scroll', requestStateUpdate);
+			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
+			viewportObserver.disconnect();
 			reducedMotion.removeEventListener('change', handleMotionChange);
-			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
 			document.removeEventListener('astro:before-swap', cleanup);
-			window.clearTimeout(resizeTimer);
-			window.cancelAnimationFrame(buildFrame);
-			revertTimeline();
+			window.cancelAnimationFrame(stateFrame);
+			window.cancelAnimationFrame(resizeFrame);
+			window.cancelAnimationFrame(settleFrame);
+			transition?.kill();
+			gsap.set([compact, footerList], {
+				clearProps: 'transform,opacity,visibility,will-change',
+			});
+			delete nav.dataset.navReady;
+			delete nav.dataset.navState;
+			delete nav.dataset.navTransitioning;
+			delete nav.dataset.footerMode;
+			delete nav.dataset.navSettling;
 			hero.style.removeProperty('--hero-contact-nav-clearance');
 			if (socialWindow.__socialFlightCleanup === cleanup) {
 				delete socialWindow.__socialFlightCleanup;
 			}
 		};
 
-		buildFrame = window.requestAnimationFrame(build);
+		resizeFrame = window.requestAnimationFrame(measure);
+		window.addEventListener('scroll', requestStateUpdate, { passive: true });
 		window.addEventListener('resize', handleResize, { passive: true });
 		window.visualViewport?.addEventListener('resize', handleResize, {
 			passive: true,
 		});
+		window.visualViewport?.addEventListener('scroll', requestStateUpdate, {
+			passive: true,
+		});
+		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
+			once: true,
+		});
+		viewportObserver.observe(document.documentElement);
 		reducedMotion.addEventListener('change', handleMotionChange);
-		window.addEventListener('pointerdown', handlePointerDown, {
-			passive: true,
-		});
-		window.addEventListener('pointerup', handlePointerUp, { passive: true });
-		window.addEventListener('pointercancel', handlePointerUp, {
-			passive: true,
-		});
-		ScrollTrigger.addEventListener('scrollEnd', handleScrollEnd);
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 		socialWindow.__socialFlightCleanup = cleanup;
 		import.meta.hot?.dispose(cleanup);
@@ -467,9 +405,10 @@ const iconPaths: Record<Contact['icon'], string> = {
 	.social-flight {
 		--contact-safe-inline-start: env(safe-area-inset-left, 0px);
 		--contact-safe-inline-end: env(safe-area-inset-right, 0px);
+		--contact-safe-block-start: env(safe-area-inset-top, 0px);
 		--contact-safe-block-end: env(safe-area-inset-bottom, 0px);
 		position: fixed;
-		z-index: 700;
+		z-index: 720;
 		inset: 0;
 		pointer-events: none;
 	}
@@ -494,7 +433,15 @@ const iconPaths: Record<Contact['icon'], string> = {
 		);
 		list-style: none;
 		pointer-events: none;
+		will-change: auto;
+	}
+
+	.social-flight[data-nav-transitioning] .contact-list {
 		will-change: transform, opacity;
+	}
+
+	.social-flight[data-nav-settling] {
+		visibility: hidden;
 	}
 
 	.social-flight:not([data-nav-ready]) .contact-list--compact {

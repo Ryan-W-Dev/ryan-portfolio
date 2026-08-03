@@ -23,7 +23,7 @@ const terrainPasses = [
 				terrainPasses.map((pass) => (
 					<picture>
 						<source
-							media="(max-width: 40rem)"
+							media="(max-width: 64rem)"
 							srcset="/assets/freefall/freefall-environment-mobile.webp"
 						/>
 						<img
@@ -132,7 +132,7 @@ const terrainPasses = [
 		block-size: 100vh;
 		block-size: 100svh;
 		overflow: hidden;
-		background: var(--ink);
+		background: transparent;
 		animation: freefall-intro-fallback-complete 0.3s ease-out 4s forwards;
 		pointer-events: none;
 		touch-action: none;
@@ -179,35 +179,8 @@ const terrainPasses = [
 		);
 	}
 
-	.freefall-intro[data-intro-owner='gsap'] {
-		background: transparent;
-	}
-
 	.terrain-camera {
 		transform: none;
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass {
-		animation: freefall-css-terrain 0.95s linear infinite;
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass:nth-child(even) {
-		animation-delay: -0.48s;
-	}
-
-	@keyframes freefall-css-terrain {
-		0% {
-			opacity: 0;
-			transform: scale(0.42);
-		}
-		18%,
-		72% {
-			opacity: 0.58;
-		}
-		100% {
-			opacity: 0;
-			transform: scale(4.6);
-		}
 	}
 
 	.terrain-pass {
@@ -218,8 +191,40 @@ const terrainPasses = [
 		max-inline-size: none;
 		object-fit: cover;
 		object-position: 50% 50%;
+		transform: scale(var(--pass-scale));
 		transform-origin: 50% 50%;
 		user-select: none;
+	}
+
+	/* CSS and GSAP share this exact terminal-velocity time-zero frame. */
+	.terrain-camera picture:nth-child(1) .terrain-pass {
+		--pass-scale: 0.58;
+		opacity: 0;
+	}
+
+	.terrain-camera picture:nth-child(2) .terrain-pass {
+		--pass-scale: 2.09;
+		opacity: 0.72;
+	}
+
+	.terrain-camera picture:nth-child(3) .terrain-pass {
+		--pass-scale: 1.2836;
+		opacity: 0.66;
+	}
+
+	.terrain-camera picture:nth-child(4) .terrain-pass {
+		--pass-scale: 3.7936;
+		opacity: 0.66;
+	}
+
+	.terrain-camera picture:nth-child(5) .terrain-pass {
+		--pass-scale: 2.58;
+		opacity: 0.54;
+	}
+
+	.terrain-camera picture:nth-child(6) .terrain-pass {
+		--pass-scale: 6.08;
+		opacity: 0.48;
 	}
 
 	.terrain-far {
@@ -246,39 +251,7 @@ const terrainPasses = [
 		inline-size: 34vmax;
 		block-size: 15vmax;
 		overflow: visible;
-		transform-origin: 50% 50%;
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass {
-		animation: freefall-css-cloud 0.72s linear infinite;
 		transform-origin: var(--fall-cloud-transform-origin);
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--two {
-		animation-delay: -0.18s;
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--three {
-		animation-delay: -0.36s;
-	}
-
-	.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass--four {
-		animation-delay: -0.54s;
-	}
-
-	@keyframes freefall-css-cloud {
-		0% {
-			opacity: 0;
-			transform: scale(0.08);
-		}
-		18%,
-		72% {
-			opacity: 0.32;
-		}
-		100% {
-			opacity: 0;
-			transform: scale(7.5);
-		}
 	}
 
 	.fall-cloud-body {
@@ -297,29 +270,41 @@ const terrainPasses = [
 	}
 
 	.fall-cloud-pass--one {
+		--pass-scale: 1.0904;
 		inset-block-start: 8%;
 		inset-inline-start: 8%;
+		opacity: 0.213333;
+		transform: scale(var(--pass-scale));
 	}
 
 	.fall-cloud-pass--two {
+		--pass-scale: 3.1954;
 		inset-block-start: 9%;
 		inset-inline-start: 63%;
-		transform: scaleX(-1);
+		opacity: 0.32;
+		transform: scaleX(-1) scale(var(--pass-scale));
 	}
 
 	.fall-cloud-pass--three {
+		--pass-scale: 5.3004;
 		inset-block-start: 66%;
 		inset-inline-start: 8%;
-		transform: rotate(-10deg);
+		opacity: 0.32;
+		transform: rotate(-10deg) scale(var(--pass-scale));
 	}
 
 	.fall-cloud-pass--four {
+		--pass-scale: 7.4054;
 		inset-block-start: 61%;
 		inset-inline-start: 67%;
-		transform: scaleX(-1) rotate(9deg);
+		opacity: 0.231111;
+		transform: scaleX(-1) rotate(9deg) scale(var(--pass-scale));
 	}
 
 	.speed-burst {
+		--pass-scale: 1.023;
+		opacity: 0.34;
+		transform: scale(var(--pass-scale));
 		transform-origin: 50% 50%;
 	}
 
@@ -375,19 +360,6 @@ const terrainPasses = [
 		transform: rotate(334deg);
 	}
 
-	.freefall-intro:not([data-intro-owner='gsap']) .speed-burst {
-		animation: freefall-css-speed 0.52s ease-in-out infinite alternate;
-	}
-
-	@keyframes freefall-css-speed {
-		from {
-			opacity: 0.2;
-		}
-		to {
-			opacity: 0.48;
-		}
-	}
-
 	.freefall-vignette {
 		background:
 			radial-gradient(
@@ -412,30 +384,31 @@ const terrainPasses = [
 		}
 
 		.fall-cloud-pass--one {
-			--fall-cloud-transform-origin: 98% 90%;
+			--fall-cloud-transform-origin: 100% 100%;
 			inset-block-start: 6svh;
 			inset-inline: auto 60%;
+			transform: scale(var(--pass-scale));
 		}
 
 		.fall-cloud-pass--two {
-			--fall-cloud-transform-origin: 4% 90%;
+			--fall-cloud-transform-origin: 0% 100%;
 			inset-block-start: 18svh;
 			inset-inline-start: 60%;
-			transform: none;
+			transform: scale(var(--pass-scale));
 		}
 
 		.fall-cloud-pass--three {
-			--fall-cloud-transform-origin: 98% 35%;
+			--fall-cloud-transform-origin: 100% 0%;
 			inset-block-start: 59svh;
 			inset-inline: auto 60%;
-			transform: none;
+			transform: scale(var(--pass-scale));
 		}
 
 		.fall-cloud-pass--four {
-			--fall-cloud-transform-origin: 4% 35%;
+			--fall-cloud-transform-origin: 0% 0%;
 			inset-block-start: 70svh;
 			inset-inline-start: 60%;
-			transform: none;
+			transform: scale(var(--pass-scale));
 		}
 	}
 
@@ -454,10 +427,24 @@ const terrainPasses = [
 				forwards;
 		}
 
-		.freefall-intro:not([data-intro-owner='gsap']) .terrain-pass,
-		.freefall-intro:not([data-intro-owner='gsap']) .fall-cloud-pass,
-		.freefall-intro:not([data-intro-owner='gsap']) .speed-burst {
-			animation: none;
+		.terrain-camera picture:nth-child(2) .terrain-pass {
+			--pass-scale: 0.88;
+		}
+
+		.terrain-camera picture:nth-child(3) .terrain-pass {
+			--pass-scale: 0.5312;
+		}
+
+		.terrain-camera picture:nth-child(4) .terrain-pass {
+			--pass-scale: 0.9512;
+		}
+
+		.terrain-camera picture:nth-child(5) .terrain-pass {
+			--pass-scale: 0.574;
+		}
+
+		.terrain-camera picture:nth-child(6) .terrain-pass {
+			--pass-scale: 1.124;
 		}
 
 		.terrain-camera picture:not(:first-child),
@@ -465,8 +452,32 @@ const terrainPasses = [
 			display: none;
 		}
 
-		.fall-cloud-pass {
-			opacity: 0.72;
+		.fall-cloud-pass--one {
+			--pass-scale: 0.2204;
+		}
+
+		.fall-cloud-pass--two {
+			--pass-scale: 0.5129;
+		}
+
+		.fall-cloud-pass--three {
+			--pass-scale: 0.8054;
+		}
+
+		.fall-cloud-pass--four {
+			--pass-scale: 1.0979;
+		}
+
+		.speed-burst {
+			--pass-scale: 0.682;
+		}
+	}
+
+	@media (max-width: 40rem) and (prefers-reduced-motion: reduce) {
+		.fall-cloud-pass--two,
+		.fall-cloud-pass--three,
+		.fall-cloud-pass--four {
+			transform: scale(var(--pass-scale));
 		}
 	}
 </style>
