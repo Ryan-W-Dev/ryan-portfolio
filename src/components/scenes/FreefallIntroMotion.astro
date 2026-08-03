@@ -14,12 +14,18 @@
 
 	const TOTAL_DURATION = 4;
 	const HERO_HANDOFF_START = 3.35;
+	const ASSET_READINESS_TIMEOUT_MS = 1500;
+	const STARTUP_WATCHDOG_MS = 6750;
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	const freefallWindow = window as Window & {
 		__freefallIntroCleanup?: () => void;
 	};
 
-	freefallWindow.__freefallIntroCleanup?.();
+	try {
+		freefallWindow.__freefallIntroCleanup?.();
+	} catch {
+		delete freefallWindow.__freefallIntroCleanup;
+	}
 
 	const opacityAt = (phase: number, maximum: number) => {
 		const fade = 0.18;
@@ -28,7 +34,58 @@
 		return maximum;
 	};
 
-	const initialiseFreefallIntro = async () => {
+	let runtimeComplete: (() => void) | undefined;
+	let completionDispatched = false;
+
+	const revealHeroContent = () => {
+		const arrival = document.querySelector<HTMLElement>('[data-arrival-scene]');
+		arrival?.setAttribute('data-intro-complete', '');
+		for (const element of [
+			arrival?.querySelector<HTMLElement>('[data-arrival-title]'),
+			arrival?.querySelector<HTMLElement>('[data-arrival-subtitle]'),
+			arrival?.querySelector<HTMLElement>('[data-scroll-indicator]'),
+		]) {
+			if (!element) continue;
+			for (const property of [
+				'opacity',
+				'visibility',
+				'transform',
+				'translate',
+				'rotate',
+				'scale',
+				'will-change',
+			]) {
+				element.style.removeProperty(property);
+			}
+		}
+	};
+
+	const emergencyRelease = () => {
+		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
+		intro?.setAttribute('hidden', '');
+		if (intro) delete intro.dataset.sequenceReady;
+		document.documentElement.style.removeProperty('overflow');
+		document.documentElement.style.removeProperty('scrollbar-gutter');
+		document.body.style.removeProperty('overflow');
+		document.body.style.removeProperty('touch-action');
+		history.scrollRestoration = 'auto';
+		revealHeroContent();
+	};
+
+	const completeIntro = () => {
+		if (completionDispatched) return;
+		completionDispatched = true;
+		try {
+			if (runtimeComplete) runtimeComplete();
+			else emergencyRelease();
+		} catch {
+			emergencyRelease();
+		} finally {
+			window.dispatchEvent(new Event(FREEFALL_COMPLETE_EVENT));
+		}
+	};
+
+	const initialiseFreefallIntro = () => {
 		const intro = document.querySelector<HTMLElement>('[data-freefall-intro]');
 		const world = intro?.querySelector<HTMLElement>('[data-freefall-world]');
 		const terrainCamera = intro?.querySelector<HTMLElement>(
@@ -48,27 +105,6 @@
 		const passElements = intro
 			? Array.from(intro.querySelectorAll<HTMLElement>('[data-depth-family]'))
 			: [];
-
-		if (
-			!intro ||
-			!world ||
-			!terrainCamera ||
-			!arrival ||
-			!heroImage ||
-			!title ||
-			!subtitle ||
-			!indicator ||
-			passElements.length === 0
-		) {
-			intro?.setAttribute('hidden', '');
-			arrival?.setAttribute('data-intro-complete', '');
-			return;
-		}
-
-		intro.hidden = false;
-		delete intro.dataset.sequenceReady;
-		delete arrival.dataset.introComplete;
-
 		const original = {
 			rootOverflow: document.documentElement.style.overflow,
 			rootGutter: document.documentElement.style.scrollbarGutter,
@@ -76,42 +112,28 @@
 			bodyTouchAction: document.body.style.touchAction,
 			scrollRestoration: history.scrollRestoration,
 		};
-
-		document.documentElement.style.overflow = 'hidden';
-		document.documentElement.style.scrollbarGutter =
-			window.innerWidth >= 768 ? 'stable' : 'auto';
-		document.body.style.overflow = 'hidden';
-		document.body.style.touchAction = 'none';
-		history.scrollRestoration = 'manual';
-		window.scrollTo(0, 0);
-
-		const artwork = [
-			...Array.from(intro.querySelectorAll<HTMLImageElement>('img')),
-			heroImage,
-		];
-		await Promise.all(
-			artwork.map(async (image) => {
-				try {
-					if (!image.complete) {
-						await new Promise<void>((resolve) => {
-							image.addEventListener('load', () => resolve(), { once: true });
-							image.addEventListener('error', () => resolve(), { once: true });
-						});
-					}
-					await image.decode();
-				} catch {
-					// The timed sequence still completes if a decoded derivative is unavailable.
-				}
-			}),
-		);
-
-		const reducedMotion = window.matchMedia(
-			'(prefers-reduced-motion: reduce)',
-		).matches;
+		const startedAt = Date.now();
+		const imageWaitResolvers = new Set<() => void>();
 		let context: gsap.Context | undefined;
 		let timeline: gsap.core.Timeline | undefined;
-		let disposed = false;
+		let startupWatchdog = 0;
+		let assetReadinessTimer = 0;
+		let settled = false;
+		let timelineStarted = false;
 		let pausedForVisibility = false;
+
+		const clearImageWaiters = () => {
+			for (const resolve of [...imageWaitResolvers]) resolve();
+			imageWaitResolvers.clear();
+		};
+
+		const clearTimers = () => {
+			window.clearTimeout(startupWatchdog);
+			window.clearTimeout(assetReadinessTimer);
+			startupWatchdog = 0;
+			assetReadinessTimer = 0;
+			clearImageWaiters();
+		};
 
 		const restorePage = () => {
 			document.documentElement.style.overflow = original.rootOverflow;
@@ -122,194 +144,345 @@
 			window.scrollTo(0, 0);
 		};
 
-		const handleVisibility = () => {
-			if (!timeline || disposed) return;
-			if (document.hidden && !timeline.paused()) {
-				pausedForVisibility = true;
-				timeline.pause();
-			} else if (!document.hidden && pausedForVisibility) {
+		const removeLifecycleListeners = () => {
+			document.removeEventListener('visibilitychange', handleVisibility);
+			document.removeEventListener('astro:before-swap', handleSwap);
+			window.removeEventListener('pageshow', handlePageShow);
+			window.removeEventListener('focus', handleFocus);
+		};
+
+		const releaseRuntime = (completed: boolean) => {
+			if (settled) return;
+			settled = true;
+			clearTimers();
+			removeLifecycleListeners();
+			try {
+				timeline?.kill();
+			} catch {
+				// Cleanup must continue even if GSAP has already torn itself down.
+			}
+			try {
+				context?.revert();
+			} catch {
+				// The page unlock and hero reveal remain mandatory.
+			}
+			timeline = undefined;
+			context = undefined;
+			if (intro) {
+				delete intro.dataset.sequenceReady;
+				intro.hidden = true;
+			}
+			try {
+				restorePage();
+			} catch {
+				document.documentElement.style.removeProperty('overflow');
+				document.documentElement.style.removeProperty('scrollbar-gutter');
+				document.body.style.removeProperty('overflow');
+				document.body.style.removeProperty('touch-action');
+			}
+			if (completed) revealHeroContent();
+			if (freefallWindow.__freefallIntroCleanup === handleCleanup) {
+				delete freefallWindow.__freefallIntroCleanup;
+			}
+			if (runtimeComplete === handleComplete) runtimeComplete = undefined;
+		};
+
+		const handleComplete = () => releaseRuntime(true);
+		const handleCleanup = () => releaseRuntime(false);
+		const handleSwap = () => handleCleanup();
+		const hardDeadlineElapsed = () =>
+			Date.now() - startedAt >= STARTUP_WATCHDOG_MS;
+
+		const resumeOrComplete = () => {
+			if (settled || document.hidden) return;
+			if (hardDeadlineElapsed()) {
+				completeIntro();
+				return;
+			}
+			if (timeline && timelineStarted && pausedForVisibility) {
 				pausedForVisibility = false;
 				timeline.resume();
 			}
 		};
 
-		const cleanup = (completed = false) => {
-			if (disposed) return;
-			disposed = true;
-			document.removeEventListener('visibilitychange', handleVisibility);
-			document.removeEventListener('astro:before-swap', handleSwap);
-			timeline?.kill();
-			intro.hidden = true;
-			context?.revert();
-			timeline = undefined;
-			context = undefined;
-			delete intro.dataset.sequenceReady;
-			restorePage();
-			if (completed) arrival.dataset.introComplete = '';
-			if (freefallWindow.__freefallIntroCleanup === handleCleanup) {
-				delete freefallWindow.__freefallIntroCleanup;
+		const handleVisibility = () => {
+			if (settled) return;
+			if (document.hidden) {
+				if (timeline && timelineStarted && !timeline.paused()) {
+					pausedForVisibility = true;
+					timeline.pause();
+				}
+				return;
+			}
+			resumeOrComplete();
+		};
+
+		const handlePageShow = () => resumeOrComplete();
+		const handleFocus = () => resumeOrComplete();
+
+		const waitForImage = async (image: HTMLImageElement) => {
+			if (!image.complete) {
+				await new Promise<void>((resolve) => {
+					const settle = () => {
+						image.removeEventListener('load', settle);
+						image.removeEventListener('error', settle);
+						imageWaitResolvers.delete(settle);
+						resolve();
+					};
+					imageWaitResolvers.add(settle);
+					image.addEventListener('load', settle, { once: true });
+					image.addEventListener('error', settle, { once: true });
+				});
+			}
+
+			if (image.naturalWidth === 0 || typeof image.decode !== 'function')
+				return;
+			try {
+				await image.decode();
+			} catch {
+				// Decoding is an optimization; load or decode failure must never block entry.
 			}
 		};
 
-		const handleCleanup = () => cleanup(false);
-		const handleSwap = () => cleanup(false);
-		const complete = () => {
-			arrival.dataset.introComplete = '';
-			cleanup(true);
-			window.dispatchEvent(new Event(FREEFALL_COMPLETE_EVENT));
+		const waitForArtwork = async () => {
+			if (!intro || !heroImage) return;
+			const uniqueImages = new Map<string, HTMLImageElement>();
+			for (const image of [
+				...Array.from(intro.querySelectorAll<HTMLImageElement>('img')),
+				heroImage,
+			]) {
+				const source =
+					image.currentSrc || image.getAttribute('src') || image.src;
+				if (!uniqueImages.has(source)) uniqueImages.set(source, image);
+			}
+
+			await Promise.race([
+				Promise.all([...uniqueImages.values()].map(waitForImage)),
+				new Promise<void>((resolve) => {
+					assetReadinessTimer = window.setTimeout(() => {
+						assetReadinessTimer = 0;
+						clearImageWaiters();
+						resolve();
+					}, ASSET_READINESS_TIMEOUT_MS);
+				}),
+			]);
+			window.clearTimeout(assetReadinessTimer);
+			assetReadinessTimer = 0;
+			clearImageWaiters();
 		};
 
-		context = gsap.context(() => {
-			gsap.set(terrainCamera, { clearProps: 'transform', willChange: 'auto' });
-			gsap.set(world, {
-				autoAlpha: 1,
-				'--hero-reveal': '0%',
-				willChange: 'mask-image, -webkit-mask-image',
+		const start = async () => {
+			startupWatchdog = window.setTimeout(completeIntro, STARTUP_WATCHDOG_MS);
+			document.addEventListener('visibilitychange', handleVisibility);
+			document.addEventListener('astro:before-swap', handleSwap, {
+				once: true,
 			});
-			gsap.set(title, {
-				autoAlpha: 0,
-				yPercent: 8,
-				scale: 0.95,
-				willChange: 'transform, opacity',
-			});
-			gsap.set([subtitle, indicator], { autoAlpha: 0, willChange: 'opacity' });
+			window.addEventListener('pageshow', handlePageShow);
+			window.addEventListener('focus', handleFocus);
 
-			const passes: FreefallPass[] = passElements.map((target) => {
-				const family = target.dataset.depthFamily;
-				const initialPhase = Number(target.dataset.initialPhase ?? 0);
-				const settings =
-					family === 'terrain-far'
-						? {
-								cycleDuration: 1.45,
-								startScale: 0.58,
-								endScale: reducedMotion ? 1.18 : 3.6,
-								maxOpacity: 0.72,
-							}
-						: family === 'terrain-mid'
-							? {
-									cycleDuration: 1.05,
-									startScale: 0.38,
-									endScale: reducedMotion ? 1.22 : 5.4,
-									maxOpacity: 0.66,
-								}
-							: family === 'terrain-near'
-								? {
-										cycleDuration: 0.78,
-										startScale: 0.2,
-										endScale: reducedMotion ? 1.3 : 7.2,
-										maxOpacity: 0.54,
-									}
-								: family === 'cloud'
-									? {
-											cycleDuration: 0.68,
-											startScale: 0.08,
-											endScale: reducedMotion ? 1.25 : 8.5,
-											maxOpacity: 0.32,
-										}
-									: {
-											cycleDuration: 0.52,
-											startScale: 0.55,
-											endScale: reducedMotion ? 1.15 : 2.7,
-											maxOpacity: 0.34,
-										};
+			if (
+				!intro ||
+				!world ||
+				!terrainCamera ||
+				!arrival ||
+				!heroImage ||
+				!title ||
+				!subtitle ||
+				!indicator ||
+				passElements.length === 0
+			) {
+				completeIntro();
+				return;
+			}
 
-				const transformOrigin =
-					window
-						.getComputedStyle(target)
-						.getPropertyValue('--fall-cloud-transform-origin')
-						.trim() || '50% 50%';
+			intro.hidden = false;
+			delete intro.dataset.sequenceReady;
+			delete arrival.dataset.introComplete;
+			document.documentElement.style.overflow = 'hidden';
+			document.documentElement.style.scrollbarGutter =
+				window.innerWidth >= 768 ? 'stable' : 'auto';
+			document.body.style.overflow = 'hidden';
+			document.body.style.touchAction = 'none';
+			history.scrollRestoration = 'manual';
+			window.scrollTo(0, 0);
 
-				gsap.set(target, {
-					transformOrigin,
+			await waitForArtwork();
+			if (settled) return;
+
+			const reducedMotion = window.matchMedia(
+				'(prefers-reduced-motion: reduce)',
+			).matches;
+
+			context = gsap.context(() => {
+				gsap.set(terrainCamera, {
+					clearProps: 'transform',
+					willChange: 'auto',
+				});
+				gsap.set(world, {
+					autoAlpha: 1,
+					'--hero-reveal': '0%',
+					willChange: 'mask-image, -webkit-mask-image',
+				});
+				gsap.set(title, {
+					autoAlpha: 0,
+					yPercent: 8,
+					scale: 0.95,
 					willChange: 'transform, opacity',
 				});
-				return {
-					target,
-					initialPhase,
-					...settings,
-					setScale: gsap.quickSetter(target, 'scale') as (
-						value: number,
-					) => void,
-					setOpacity: gsap.quickSetter(target, 'opacity') as (
-						value: number,
-					) => void,
-				};
-			});
-
-			const renderPasses = (elapsed: number) => {
-				passes.forEach((pass) => {
-					const phase = (pass.initialPhase + elapsed / pass.cycleDuration) % 1;
-					pass.setScale(
-						pass.startScale + (pass.endScale - pass.startScale) * phase,
-					);
-					pass.setOpacity(opacityAt(phase, pass.maxOpacity));
+				gsap.set([subtitle, indicator], {
+					autoAlpha: 0,
+					willChange: 'opacity',
 				});
-			};
 
-			const clock = { elapsed: 0 };
-			// Establish the shared pass origin before the first-paint gate reveals the world.
-			renderPasses(0);
+				const passes: FreefallPass[] = passElements.map((target) => {
+					const family = target.dataset.depthFamily;
+					const initialPhase = Number(target.dataset.initialPhase ?? 0);
+					const settings =
+						family === 'terrain-far'
+							? {
+									cycleDuration: 1.45,
+									startScale: 0.58,
+									endScale: reducedMotion ? 1.18 : 3.6,
+									maxOpacity: 0.72,
+								}
+							: family === 'terrain-mid'
+								? {
+										cycleDuration: 1.05,
+										startScale: 0.38,
+										endScale: reducedMotion ? 1.22 : 5.4,
+										maxOpacity: 0.66,
+									}
+								: family === 'terrain-near'
+									? {
+											cycleDuration: 0.78,
+											startScale: 0.2,
+											endScale: reducedMotion ? 1.3 : 7.2,
+											maxOpacity: 0.54,
+										}
+									: family === 'cloud'
+										? {
+												cycleDuration: 0.68,
+												startScale: 0.08,
+												endScale: reducedMotion ? 1.25 : 8.5,
+												maxOpacity: 0.32,
+											}
+										: {
+												cycleDuration: 0.52,
+												startScale: 0.55,
+												endScale: reducedMotion ? 1.15 : 2.7,
+												maxOpacity: 0.34,
+											};
 
-			timeline = gsap.timeline({ paused: true, onComplete: complete });
-			timeline
-				.addLabel('terminal-velocity', 0)
-				.to(
-					clock,
-					{
-						elapsed: TOTAL_DURATION,
-						duration: TOTAL_DURATION,
-						ease: 'none',
-						onUpdate: () => renderPasses(clock.elapsed),
-					},
-					0,
-				)
-				.addLabel('hero-handoff', HERO_HANDOFF_START)
-				.to(
-					world,
-					{
-						'--hero-reveal': '150%',
-						duration: TOTAL_DURATION - HERO_HANDOFF_START,
-						ease: 'power3.inOut',
-					},
-					HERO_HANDOFF_START,
-				)
-				.to(
-					title,
-					{
-						autoAlpha: 1,
-						yPercent: 0,
-						scale: 1,
-						duration: 0.48,
-						ease: 'power3.out',
-					},
-					HERO_HANDOFF_START + 0.11,
-				)
-				.to(
-					[subtitle, indicator],
-					{
-						autoAlpha: 1,
-						duration: 0.26,
-						ease: 'power2.out',
-					},
-					HERO_HANDOFF_START + 0.38,
-				)
-				.addLabel('intro-complete', TOTAL_DURATION);
+					const transformOrigin =
+						window
+							.getComputedStyle(target)
+							.getPropertyValue('--fall-cloud-transform-origin')
+							.trim() || '50% 50%';
 
-			timeline.totalTime(0, true);
-		}, intro);
+					gsap.set(target, {
+						transformOrigin,
+						willChange: 'transform, opacity',
+					});
+					return {
+						target,
+						initialPhase,
+						...settings,
+						setScale: gsap.quickSetter(target, 'scale') as (
+							value: number,
+						) => void,
+						setOpacity: gsap.quickSetter(target, 'opacity') as (
+							value: number,
+						) => void,
+					};
+				});
 
-		document.addEventListener('visibilitychange', handleVisibility);
-		document.addEventListener('astro:before-swap', handleSwap, { once: true });
+				const renderPasses = (elapsed: number) => {
+					passes.forEach((pass) => {
+						const phase =
+							(pass.initialPhase + elapsed / pass.cycleDuration) % 1;
+						pass.setScale(
+							pass.startScale + (pass.endScale - pass.startScale) * phase,
+						);
+						pass.setOpacity(opacityAt(phase, pass.maxOpacity));
+					});
+				};
+
+				const clock = { elapsed: 0 };
+				// Establish the shared pass origin before the first-paint gate reveals the world.
+				renderPasses(0);
+
+				timeline = gsap.timeline({ paused: true, onComplete: completeIntro });
+				timeline
+					.addLabel('terminal-velocity', 0)
+					.to(
+						clock,
+						{
+							elapsed: TOTAL_DURATION,
+							duration: TOTAL_DURATION,
+							ease: 'none',
+							onUpdate: () => renderPasses(clock.elapsed),
+						},
+						0,
+					)
+					.addLabel('hero-handoff', HERO_HANDOFF_START)
+					.to(
+						world,
+						{
+							'--hero-reveal': '150%',
+							duration: TOTAL_DURATION - HERO_HANDOFF_START,
+							ease: 'power3.inOut',
+						},
+						HERO_HANDOFF_START,
+					)
+					.to(
+						title,
+						{
+							autoAlpha: 1,
+							yPercent: 0,
+							scale: 1,
+							duration: 0.48,
+							ease: 'power3.out',
+						},
+						HERO_HANDOFF_START + 0.11,
+					)
+					.to(
+						[subtitle, indicator],
+						{
+							autoAlpha: 1,
+							duration: 0.26,
+							ease: 'power2.out',
+						},
+						HERO_HANDOFF_START + 0.38,
+					)
+					.addLabel('intro-complete', TOTAL_DURATION);
+
+				timeline.totalTime(0, true);
+			}, intro);
+
+			void world.getBoundingClientRect();
+			intro.dataset.sequenceReady = '';
+			requestAnimationFrame(() => {
+				if (settled) return;
+				timelineStarted = true;
+				if (hardDeadlineElapsed()) {
+					completeIntro();
+				} else if (document.hidden) {
+					pausedForVisibility = true;
+				} else {
+					timeline?.play();
+				}
+			});
+		};
+
 		freefallWindow.__freefallIntroCleanup = handleCleanup;
+		runtimeComplete = handleComplete;
 		import.meta.hot?.dispose(handleCleanup);
-
-		void world.getBoundingClientRect();
-		intro.dataset.sequenceReady = '';
-		requestAnimationFrame(() => {
-			if (document.hidden) pausedForVisibility = true;
-			else timeline?.play();
-		});
+		void start().catch(() => completeIntro());
 	};
 
-	void initialiseFreefallIntro();
+	try {
+		initialiseFreefallIntro();
+	} catch {
+		completeIntro();
+	}
 </script>

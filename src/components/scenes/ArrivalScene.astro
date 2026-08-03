@@ -165,6 +165,7 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	.arrival-content h1,
 	.arrival-content p,
 	.scroll-indicator {
+		animation: arrival-content-fail-open 1ms linear 7s forwards;
 		visibility: hidden;
 		opacity: 0;
 	}
@@ -172,8 +173,16 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	.arrival-scene[data-intro-complete] .arrival-content h1,
 	.arrival-scene[data-intro-complete] .arrival-content p,
 	.arrival-scene[data-intro-complete] .scroll-indicator {
+		animation: none;
 		visibility: visible;
 		opacity: 1;
+	}
+
+	@keyframes arrival-content-fail-open {
+		to {
+			visibility: visible;
+			opacity: 1;
+		}
 	}
 
 	h1 {

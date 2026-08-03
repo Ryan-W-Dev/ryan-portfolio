@@ -16,17 +16,23 @@ const terrainPasses = [
 		<div class="terrain-camera" data-terrain-camera>
 			{
 				terrainPasses.map((pass) => (
-					<img
-						class={`terrain-pass ${pass.family}`}
-						data-depth-family={pass.family}
-						data-initial-phase={pass.phase}
-						src="/assets/freefall/freefall-environment.webp"
-						alt=""
-						width="1920"
-						height="1080"
-						decoding="async"
-						draggable="false"
-					/>
+					<picture>
+						<source
+							media="(max-width: 40rem)"
+							srcset="/assets/freefall/freefall-environment-mobile.webp"
+						/>
+						<img
+							class={`terrain-pass ${pass.family}`}
+							data-depth-family={pass.family}
+							data-initial-phase={pass.phase}
+							src="/assets/freefall/freefall-environment.webp"
+							alt=""
+							width="1920"
+							height="1080"
+							decoding="async"
+							draggable="false"
+						/>
+					</picture>
 				))
 			}
 		</div>
@@ -122,12 +128,20 @@ const terrainPasses = [
 		block-size: 100svh;
 		overflow: hidden;
 		background: var(--ink);
+		animation: freefall-intro-fail-open 1ms linear 7s forwards;
 		pointer-events: none;
 		touch-action: none;
 	}
 
 	.freefall-intro[hidden] {
 		display: none;
+	}
+
+	@keyframes freefall-intro-fail-open {
+		to {
+			opacity: 0;
+			visibility: hidden;
+		}
 	}
 
 	.freefall-world,
