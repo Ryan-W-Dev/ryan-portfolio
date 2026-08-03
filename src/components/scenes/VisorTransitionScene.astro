@@ -49,10 +49,14 @@ import RockFaceScene from './RockFaceScene.astro';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 	gsap.registerPlugin(ScrollTrigger);
+	ScrollTrigger.config({ ignoreMobileResize: true });
 
 	const VISOR_SEQUENCE_TRIGGER_ID = 'extreme-card-visor-sequence';
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
 	const FINAL_CARD_SETTLE_VIEWPORT_RATIO = 0.25;
+	const MOBILE_TRANSITION_DISTANCE_MULTIPLIER = 2.1;
+	const MOBILE_SCRUB_SECONDS = 0.45;
+	const GOGGLE_BASE_SIZE = { inline: 1200, block: 520 } as const;
 	const TRANSITION_SCROLL_RATIOS = {
 		helmetForm: 0.55,
 		visorLock: 0.45,
@@ -202,8 +206,78 @@ import RockFaceScene from './RockFaceScene.astro';
 
 		let context: gsap.Context | undefined;
 		let timeline: gsap.core.Timeline | undefined;
-		let resizeFrame: number | undefined;
+		let resizeTimer = 0;
 		let disposed = false;
+		let gestureActive = false;
+		let pendingRebuild = false;
+		let buildCount = 0;
+		let animationFrameCount = 0;
+		let animationFrameDuration = 0;
+		let animationLastTimestamp = 0;
+		let animationDroppedFrames = 0;
+		let animationLongFrames = 0;
+		let animationFrame = 0;
+		const debugMotionEnabled =
+			import.meta.env.DEV &&
+			new URLSearchParams(window.location.search).has('debugMotion');
+		const measureViewport = () => ({
+			width: window.innerWidth,
+			height: window.innerHeight,
+			portrait: window.innerHeight > window.innerWidth,
+			breakpoint:
+				window.innerWidth <= 640
+					? 'mobile'
+					: window.innerWidth <= 768
+						? 'tablet'
+						: 'desktop',
+			mobile: window.innerWidth <= 768 || ScrollTrigger.isTouch === 1,
+		});
+		let viewport = measureViewport();
+		const debugMotion = (
+			event: string,
+			details: Record<string, unknown> = {},
+		) => {
+			if (!debugMotionEnabled) return;
+			console.info(
+				'[visor-debug]',
+				JSON.stringify({
+					event,
+					timestamp: Math.round(performance.now()),
+					...details,
+				}),
+			);
+		};
+		const measureAnimationFrame = (timestamp: number) => {
+			if (!debugMotionEnabled) return;
+			if (animationLastTimestamp > 0) {
+				const frameDuration = timestamp - animationLastTimestamp;
+				if (frameDuration <= 250) {
+					animationFrameCount += 1;
+					animationFrameDuration += frameDuration;
+					if (frameDuration > 34) animationDroppedFrames += 1;
+					if (frameDuration > 50) animationLongFrames += 1;
+				}
+			}
+			animationLastTimestamp = timestamp;
+			if (animationFrameCount > 0 && animationFrameCount % 20 === 0) {
+				sequence.dataset.visorMeasuredFps = String(
+					Math.round((1000 * animationFrameCount) / animationFrameDuration),
+				);
+				sequence.dataset.visorDroppedFrames = String(animationDroppedFrames);
+				sequence.dataset.visorLongFrames = String(animationLongFrames);
+			}
+			animationFrame = window.requestAnimationFrame(measureAnimationFrame);
+		};
+		const startAnimationMeasurement = () => {
+			if (!debugMotionEnabled || animationFrame) return;
+			animationLastTimestamp = 0;
+			animationFrame = window.requestAnimationFrame(measureAnimationFrame);
+		};
+		const stopAnimationMeasurement = () => {
+			window.cancelAnimationFrame(animationFrame);
+			animationFrame = 0;
+			animationLastTimestamp = 0;
+		};
 
 		const revertTimeline = () => {
 			timeline?.scrollTrigger?.kill();
@@ -214,21 +288,28 @@ import RockFaceScene from './RockFaceScene.astro';
 		};
 
 		const buildTimeline = () => {
+			const builtDuringInteraction =
+				gestureActive || ScrollTrigger.isScrolling();
 			revertTimeline();
 
 			const travelDistance = horizontalTravel();
 			const settleDistance = viewportDistance(FINAL_CARD_SETTLE_VIEWPORT_RATIO);
+			const mobileViewport = window.matchMedia('(max-width: 48rem)').matches;
+			const transitionDistanceMultiplier = mobileViewport
+				? MOBILE_TRANSITION_DISTANCE_MULTIPLIER
+				: 1;
 			const helmetFormDistance = viewportDistance(
-				TRANSITION_SCROLL_RATIOS.helmetForm,
+				TRANSITION_SCROLL_RATIOS.helmetForm * transitionDistanceMultiplier,
 			);
 			const visorLockDistance = viewportDistance(
-				TRANSITION_SCROLL_RATIOS.visorLock,
+				TRANSITION_SCROLL_RATIOS.visorLock * transitionDistanceMultiplier,
 			);
 			const visorPassThroughDistance = viewportDistance(
-				TRANSITION_SCROLL_RATIOS.visorPassThrough,
+				TRANSITION_SCROLL_RATIOS.visorPassThrough *
+					transitionDistanceMultiplier,
 			);
 			const rockFaceResolveDistance = viewportDistance(
-				TRANSITION_SCROLL_RATIOS.rockFaceResolve,
+				TRANSITION_SCROLL_RATIOS.rockFaceResolve * transitionDistanceMultiplier,
 			);
 			const transitionDistance =
 				helmetFormDistance +
@@ -240,6 +321,33 @@ import RockFaceScene from './RockFaceScene.astro';
 			// This inert tween turns pinned scroll distance into the reversible final-card hold.
 			const settleState = { progress: 0 };
 			const goggleGeometry = responsiveGoggleGeometry();
+			const visorBaseInline = Math.max(1, stage.clientWidth);
+			const visorBaseBlock = Math.max(1, stage.clientHeight);
+			const visorScale = (inline: number, block: number) => ({
+				scaleX: inline / visorBaseInline,
+				scaleY: block / visorBaseBlock,
+			});
+			const revealCounterScale = (inline: number, block: number) => ({
+				scaleX: visorBaseInline / Math.max(inline, 1),
+				scaleY: visorBaseBlock / Math.max(block, 1),
+			});
+			const goggleScale = (inline: number, block: number) => ({
+				scaleX: inline / GOGGLE_BASE_SIZE.inline,
+				scaleY: block / GOGGLE_BASE_SIZE.block,
+			});
+			const syncRevealSurfaceScale = () => {
+				const visorOpacity = Number(gsap.getProperty(visorWindow, 'opacity'));
+				const scaleX = Number(gsap.getProperty(visorWindow, 'scaleX')) || 1;
+				const scaleY = Number(gsap.getProperty(visorWindow, 'scaleY')) || 1;
+				const counterScale =
+					visorOpacity > 0.001
+						? { scaleX: 1 / scaleX, scaleY: 1 / scaleY }
+						: revealCounterScale(
+								goggleGeometry.lockWindowInline,
+								goggleGeometry.lockWindowBlock,
+							);
+				gsap.set(revealSurface, { ...counterScale, force3D: true });
+			};
 			const aboutPanelRevealStart = `${VISOR_PASS_THROUGH_LABEL}+=${visorPassThroughDistance * ABOUT_PANEL_TIMING.delay}`;
 			const aboutCopyRevealStart = `${ROCK_FACE_RESOLVE_LABEL}+=${rockFaceResolveDistance * ABOUT_COPY_TIMING.delay}`;
 
@@ -261,13 +369,22 @@ import RockFaceScene from './RockFaceScene.astro';
 					transformOrigin: '50% 50%',
 				});
 				gsap.set(revealSurface, {
-					width: stage.clientWidth,
-					height: stage.clientHeight,
+					width: visorBaseInline,
+					height: visorBaseBlock,
+					...revealCounterScale(
+						goggleGeometry.lockWindowInline,
+						goggleGeometry.lockWindowBlock,
+					),
+					transformOrigin: '50% 50%',
+					force3D: true,
 				});
 				gsap.set(visorWindow, {
 					autoAlpha: 0,
-					width: 4,
-					height: 1,
+					width: visorBaseInline,
+					height: visorBaseBlock,
+					...visorScale(4, 1),
+					transformOrigin: '50% 50%',
+					force3D: true,
 				});
 				gsap.set(aboutStatement, {
 					autoAlpha: 0,
@@ -282,9 +399,14 @@ import RockFaceScene from './RockFaceScene.astro';
 					rotation: 0,
 					xPercent: -50,
 					yPercent: -50,
-					width: goggleGeometry.lockFrameInline * 0.72,
-					height: goggleGeometry.lockFrameBlock * 0.72,
+					width: GOGGLE_BASE_SIZE.inline,
+					height: GOGGLE_BASE_SIZE.block,
+					...goggleScale(
+						goggleGeometry.lockFrameInline * 0.72,
+						goggleGeometry.lockFrameBlock * 0.72,
+					),
 					transformOrigin: '50% 50%',
+					force3D: true,
 				});
 				gsap.set([primaryReflection, secondaryReflection], {
 					autoAlpha: 0,
@@ -294,19 +416,31 @@ import RockFaceScene from './RockFaceScene.astro';
 				timeline = gsap
 					.timeline({
 						defaults: { ease: 'none' },
+						onUpdate: syncRevealSurfaceScale,
 						scrollTrigger: {
 							id: VISOR_SEQUENCE_TRIGGER_ID,
 							trigger: sequence,
 							start: 'top top',
 							end: `+=${Math.max(totalScrollDistance, 1)}`,
-							scrub: true,
+							scrub: mobileViewport ? MOBILE_SCRUB_SECONDS : true,
 							pin: stage,
 							refreshPriority: 10,
 							invalidateOnRefresh: true,
 							onToggle: (self) => {
-								gsap.set([track, cardViewport, goggleFrame, visorWindow], {
-									willChange: self.isActive ? 'transform, opacity' : 'auto',
-								});
+								if (self.isActive) startAnimationMeasurement();
+								else stopAnimationMeasurement();
+								gsap.set(
+									[
+										track,
+										cardViewport,
+										goggleFrame,
+										visorWindow,
+										revealSurface,
+									],
+									{
+										willChange: self.isActive ? 'transform, opacity' : 'auto',
+									},
+								);
 							},
 						},
 					})
@@ -361,8 +495,10 @@ import RockFaceScene from './RockFaceScene.astro';
 						goggleFrame,
 						{
 							autoAlpha: 1,
-							width: goggleGeometry.lockFrameInline,
-							height: goggleGeometry.lockFrameBlock,
+							...goggleScale(
+								goggleGeometry.lockFrameInline,
+								goggleGeometry.lockFrameBlock,
+							),
 							duration: helmetFormDistance,
 						},
 						HELMET_FORM_LABEL,
@@ -381,8 +517,10 @@ import RockFaceScene from './RockFaceScene.astro';
 					.to(
 						visorWindow,
 						{
-							width: goggleGeometry.lockWindowInline,
-							height: goggleGeometry.lockWindowBlock,
+							...visorScale(
+								goggleGeometry.lockWindowInline,
+								goggleGeometry.lockWindowBlock,
+							),
 							duration: visorLockDistance,
 						},
 						VISOR_LOCK_LABEL,
@@ -427,8 +565,10 @@ import RockFaceScene from './RockFaceScene.astro';
 					.to(
 						visorWindow,
 						{
-							width: goggleGeometry.passWindowInline,
-							height: goggleGeometry.passWindowBlock,
+							...visorScale(
+								goggleGeometry.passWindowInline,
+								goggleGeometry.passWindowBlock,
+							),
 							duration: visorPassThroughDistance,
 						},
 						VISOR_PASS_THROUGH_LABEL,
@@ -437,8 +577,10 @@ import RockFaceScene from './RockFaceScene.astro';
 						goggleFrame,
 						{
 							rotation: 1.2,
-							width: goggleGeometry.passFrameInline,
-							height: goggleGeometry.passFrameBlock,
+							...goggleScale(
+								goggleGeometry.passFrameInline,
+								goggleGeometry.passFrameBlock,
+							),
 							duration: visorPassThroughDistance,
 						},
 						VISOR_PASS_THROUGH_LABEL,
@@ -474,8 +616,10 @@ import RockFaceScene from './RockFaceScene.astro';
 					.to(
 						visorWindow,
 						{
-							width: goggleGeometry.resolveWindowInline,
-							height: goggleGeometry.resolveWindowBlock,
+							...visorScale(
+								goggleGeometry.resolveWindowInline,
+								goggleGeometry.resolveWindowBlock,
+							),
 							duration: rockFaceResolveDistance,
 						},
 						ROCK_FACE_RESOLVE_LABEL,
@@ -485,8 +629,10 @@ import RockFaceScene from './RockFaceScene.astro';
 						{
 							autoAlpha: 0,
 							rotation: 0,
-							width: goggleGeometry.resolveFrameInline,
-							height: goggleGeometry.resolveFrameBlock,
+							...goggleScale(
+								goggleGeometry.resolveFrameInline,
+								goggleGeometry.resolveFrameBlock,
+							),
 							duration: rockFaceResolveDistance,
 						},
 						ROCK_FACE_RESOLVE_LABEL,
@@ -509,26 +655,114 @@ import RockFaceScene from './RockFaceScene.astro';
 						aboutCopyRevealStart,
 					);
 			}, sequence);
-		};
-
-		const handleResize = () => {
-			if (disposed) {
-				return;
+			buildCount += 1;
+			if (import.meta.env.DEV) {
+				sequence.dataset.visorBuildCount = String(buildCount);
+				if (builtDuringInteraction) {
+					sequence.dataset.visorBuildDuringScroll = 'true';
+				}
 			}
-
-			if (resizeFrame !== undefined) {
-				window.cancelAnimationFrame(resizeFrame);
-			}
-
-			resizeFrame = window.requestAnimationFrame(() => {
-				resizeFrame = undefined;
-				buildTimeline();
-				ScrollTrigger.refresh();
+			debugMotion('timeline-built', {
+				buildCount,
+				builtDuringInteraction,
+				mobileViewport,
+				totalScrollDistance: Math.round(totalScrollDistance),
 			});
 		};
 
+		const rebuildWhenIdle = () => {
+			window.clearTimeout(resizeTimer);
+			resizeTimer = 0;
+			if (disposed || !pendingRebuild) return;
+			if (gestureActive || ScrollTrigger.isScrolling()) {
+				debugMotion('rebuild-deferred', {
+					gestureActive,
+					scrolling: ScrollTrigger.isScrolling(),
+				});
+				return;
+			}
+
+			const previousTrigger = timeline?.scrollTrigger;
+			const previousScroll = previousTrigger?.scroll() ?? window.scrollY;
+			const preserveProgress = Boolean(
+				previousTrigger &&
+				previousScroll >= previousTrigger.start &&
+				previousScroll <= previousTrigger.end,
+			);
+			const previousProgress = previousTrigger?.progress ?? 0;
+			pendingRebuild = false;
+			buildTimeline();
+			ScrollTrigger.refresh();
+
+			const nextTrigger = timeline?.scrollTrigger;
+			if (preserveProgress && nextTrigger) {
+				const nextScroll =
+					nextTrigger.start +
+					(nextTrigger.end - nextTrigger.start) * previousProgress;
+				timeline?.progress(previousProgress);
+				nextTrigger.scroll(nextScroll);
+				ScrollTrigger.update();
+			}
+			debugMotion('rebuild-complete', {
+				preserveProgress,
+				previousProgress,
+			});
+		};
+
+		const scheduleRebuild = () => {
+			pendingRebuild = true;
+			window.clearTimeout(resizeTimer);
+			resizeTimer = window.setTimeout(rebuildWhenIdle, 180);
+		};
+
+		const handleResize = () => {
+			if (disposed) return;
+			const nextViewport = measureViewport();
+			const widthChanged = Math.abs(nextViewport.width - viewport.width) >= 1;
+			const orientationChanged = nextViewport.portrait !== viewport.portrait;
+			const breakpointChanged = nextViewport.breakpoint !== viewport.breakpoint;
+			const heightChanged =
+				Math.abs(nextViewport.height - viewport.height) >= 1;
+			const heightOnlyMobileResize =
+				nextViewport.mobile &&
+				viewport.mobile &&
+				heightChanged &&
+				!widthChanged &&
+				!orientationChanged &&
+				!breakpointChanged;
+
+			viewport = nextViewport;
+			if (heightOnlyMobileResize) {
+				debugMotion('height-only-resize-ignored', nextViewport);
+				return;
+			}
+			if (
+				widthChanged ||
+				orientationChanged ||
+				breakpointChanged ||
+				(!nextViewport.mobile && heightChanged)
+			) {
+				scheduleRebuild();
+			}
+		};
+
+		const handleScrollEnd = () => {
+			if (pendingRebuild && !gestureActive) scheduleRebuild();
+		};
+
+		const handlePointerDown = (event: PointerEvent) => {
+			if (event.pointerType === 'touch') gestureActive = true;
+		};
+
+		const handlePointerUp = (event: PointerEvent) => {
+			if (event.pointerType !== 'touch') return;
+			gestureActive = false;
+			if (pendingRebuild) scheduleRebuild();
+		};
+
 		const handleFreefallComplete = () => {
-			handleResize();
+			viewport = measureViewport();
+			scheduleRebuild();
 		};
 
 		const cleanup = () => {
@@ -538,16 +772,19 @@ import RockFaceScene from './RockFaceScene.astro';
 
 			disposed = true;
 			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('pointerdown', handlePointerDown);
+			window.removeEventListener('pointerup', handlePointerUp);
+			window.removeEventListener('pointercancel', handlePointerUp);
+			ScrollTrigger.removeEventListener('scrollEnd', handleScrollEnd);
 			window.removeEventListener(
 				FREEFALL_COMPLETE_EVENT,
 				handleFreefallComplete,
 			);
 			document.removeEventListener('astro:before-swap', cleanup);
 
-			if (resizeFrame !== undefined) {
-				window.cancelAnimationFrame(resizeFrame);
-				resizeFrame = undefined;
-			}
+			window.clearTimeout(resizeTimer);
+			resizeTimer = 0;
+			stopAnimationMeasurement();
 
 			revertTimeline();
 
@@ -558,6 +795,14 @@ import RockFaceScene from './RockFaceScene.astro';
 
 		buildTimeline();
 		window.addEventListener('resize', handleResize, { passive: true });
+		window.addEventListener('pointerdown', handlePointerDown, {
+			passive: true,
+		});
+		window.addEventListener('pointerup', handlePointerUp, { passive: true });
+		window.addEventListener('pointercancel', handlePointerUp, {
+			passive: true,
+		});
+		ScrollTrigger.addEventListener('scrollEnd', handleScrollEnd);
 		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleFreefallComplete, {
 			once: true,
 		});
@@ -611,6 +856,8 @@ import RockFaceScene from './RockFaceScene.astro';
 		background: var(--cobalt);
 		box-shadow: 0.6rem 0.7rem 0 var(--red);
 		translate: -50% -50%;
+		contain: layout paint style;
+		backface-visibility: hidden;
 	}
 
 	.visor-reveal-surface {
@@ -621,6 +868,7 @@ import RockFaceScene from './RockFaceScene.astro';
 		block-size: 100vh;
 		block-size: 100svh;
 		translate: -50% -50%;
+		backface-visibility: hidden;
 	}
 
 	.visor-reveal-surface :global([data-rock-scene]) {
@@ -641,9 +889,6 @@ import RockFaceScene from './RockFaceScene.astro';
 		z-index: 3;
 		inset: 0;
 		pointer-events: none;
-		filter: drop-shadow(
-			clamp(0.4rem, 0.9vw, 0.9rem) clamp(0.4rem, 0.9vw, 0.9rem) 0 var(--red)
-		);
 	}
 
 	.goggle-frame {
@@ -655,6 +900,10 @@ import RockFaceScene from './RockFaceScene.astro';
 		block-size: 1px;
 		max-inline-size: none;
 		overflow: visible;
+		filter: drop-shadow(
+			clamp(0.4rem, 0.9vw, 0.9rem) clamp(0.4rem, 0.9vw, 0.9rem) 0 var(--red)
+		);
+		backface-visibility: hidden;
 	}
 
 	.goggle-frame-body {

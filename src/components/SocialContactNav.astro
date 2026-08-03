@@ -105,6 +105,10 @@ const contacts: Contact[] = [
 
 		let context: gsap.Context | undefined;
 		let resizeFrame = 0;
+		let viewportWidth = window.innerWidth;
+		let viewportHeight = window.innerHeight;
+		let viewportPortrait = viewportHeight > viewportWidth;
+		let viewportBreakpoint = viewportWidth <= 640 ? 'mobile' : 'large';
 
 		const build = () => {
 			context?.revert();
@@ -202,6 +206,22 @@ const contacts: Contact[] = [
 		};
 
 		const handleResize = () => {
+			const nextWidth = window.innerWidth;
+			const nextHeight = window.innerHeight;
+			const nextPortrait = nextHeight > nextWidth;
+			const nextBreakpoint = nextWidth <= 640 ? 'mobile' : 'large';
+			const widthChanged = Math.abs(nextWidth - viewportWidth) >= 1;
+			const heightChanged = Math.abs(nextHeight - viewportHeight) >= 1;
+			const meaningfulResize =
+				widthChanged ||
+				nextPortrait !== viewportPortrait ||
+				nextBreakpoint !== viewportBreakpoint ||
+				(nextWidth > 768 && heightChanged);
+			viewportWidth = nextWidth;
+			viewportHeight = nextHeight;
+			viewportPortrait = nextPortrait;
+			viewportBreakpoint = nextBreakpoint;
+			if (!meaningfulResize) return;
 			window.cancelAnimationFrame(resizeFrame);
 			resizeFrame = window.requestAnimationFrame(() => {
 				build();

@@ -17,8 +17,18 @@
 	const ASSET_READINESS_TIMEOUT_MS = 1500;
 	const STARTUP_WATCHDOG_MS = 6750;
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
+	type IntroState =
+		| 'pending'
+		| 'initializing'
+		| 'playing'
+		| 'completing'
+		| 'complete'
+		| 'recovered';
+	type CompletionReason =
+		'timeline' | 'watchdog' | 'missing-dom' | 'initialization-failure';
 	const freefallWindow = window as Window & {
 		__freefallIntroCleanup?: () => void;
+		__freefallIntroState?: IntroState;
 	};
 
 	try {
@@ -34,8 +44,43 @@
 		return maximum;
 	};
 
-	let runtimeComplete: (() => void) | undefined;
+	let introState: IntroState = 'pending';
+	let runtimeComplete: ((recovered: boolean) => void) | undefined;
 	let completionDispatched = false;
+	const debugIntroEnabled =
+		import.meta.env.DEV &&
+		new URLSearchParams(window.location.search).has('debugIntro');
+
+	const setIntroState = (state: IntroState, intro?: HTMLElement | null) => {
+		introState = state;
+		freefallWindow.__freefallIntroState = state;
+		const introRoot =
+			intro ?? document.querySelector<HTMLElement>('[data-freefall-intro]');
+		if (introRoot) introRoot.dataset.introState = state;
+		if (debugIntroEnabled) {
+			console.info(
+				'[freefall-debug]',
+				JSON.stringify({
+					event: `state:${state}`,
+					timestamp: Math.round(performance.now()),
+				}),
+			);
+		}
+	};
+
+	const debugIntro = (event: string, details: Record<string, unknown> = {}) => {
+		if (!debugIntroEnabled) return;
+		console.info(
+			'[freefall-debug]',
+			JSON.stringify({
+				event,
+				state: introState,
+				timestamp: Math.round(performance.now()),
+				...details,
+			}),
+		);
+	};
+	debugIntro('script-initialized');
 
 	const revealHeroContent = () => {
 		const arrival = document.querySelector<HTMLElement>('[data-arrival-scene]');
@@ -72,15 +117,24 @@
 		revealHeroContent();
 	};
 
-	const completeIntro = () => {
+	const completeIntro = (
+		reason: CompletionReason,
+		recovered = reason !== 'timeline',
+	) => {
 		if (completionDispatched) return;
 		completionDispatched = true;
+		setIntroState('completing');
+		debugIntro('completion-requested', { reason, recovered });
+		if (recovered) debugIntro('recovery-activated', { reason });
 		try {
-			if (runtimeComplete) runtimeComplete();
+			if (runtimeComplete) runtimeComplete(recovered);
 			else emergencyRelease();
 		} catch {
 			emergencyRelease();
+			recovered = true;
 		} finally {
+			debugIntro('hero-revealed', { reason, recovered });
+			setIntroState(recovered ? 'recovered' : 'complete');
 			window.dispatchEvent(new Event(FREEFALL_COMPLETE_EVENT));
 		}
 	};
@@ -112,11 +166,12 @@
 			bodyTouchAction: document.body.style.touchAction,
 			scrollRestoration: history.scrollRestoration,
 		};
-		const startedAt = Date.now();
 		const imageWaitResolvers = new Set<() => void>();
 		let context: gsap.Context | undefined;
 		let timeline: gsap.core.Timeline | undefined;
 		let startupWatchdog = 0;
+		let watchdogRemaining = STARTUP_WATCHDOG_MS;
+		let watchdogStartedAt = 0;
 		let assetReadinessTimer = 0;
 		let settled = false;
 		let timelineStarted = false;
@@ -125,6 +180,36 @@
 		const clearImageWaiters = () => {
 			for (const resolve of [...imageWaitResolvers]) resolve();
 			imageWaitResolvers.clear();
+		};
+
+		const pauseWatchdog = () => {
+			if (!startupWatchdog) return;
+			window.clearTimeout(startupWatchdog);
+			startupWatchdog = 0;
+			watchdogRemaining = Math.max(
+				0,
+				watchdogRemaining - (performance.now() - watchdogStartedAt),
+			);
+			debugIntro('watchdog-paused', {
+				remaining: Math.round(watchdogRemaining),
+			});
+		};
+
+		const armWatchdog = () => {
+			if (settled || document.hidden || startupWatchdog) return;
+			if (watchdogRemaining <= 0) {
+				completeIntro('watchdog');
+				return;
+			}
+			watchdogStartedAt = performance.now();
+			startupWatchdog = window.setTimeout(() => {
+				startupWatchdog = 0;
+				watchdogRemaining = 0;
+				completeIntro('watchdog');
+			}, watchdogRemaining);
+			debugIntro('watchdog-armed', {
+				remaining: Math.round(watchdogRemaining),
+			});
 		};
 
 		const clearTimers = () => {
@@ -190,15 +275,11 @@
 		const handleComplete = () => releaseRuntime(true);
 		const handleCleanup = () => releaseRuntime(false);
 		const handleSwap = () => handleCleanup();
-		const hardDeadlineElapsed = () =>
-			Date.now() - startedAt >= STARTUP_WATCHDOG_MS;
 
-		const resumeOrComplete = () => {
+		const resumeRuntime = (source: 'visibility' | 'pageshow' | 'focus') => {
 			if (settled || document.hidden) return;
-			if (hardDeadlineElapsed()) {
-				completeIntro();
-				return;
-			}
+			debugIntro('lifecycle-resume', { source });
+			armWatchdog();
 			if (timeline && timelineStarted && pausedForVisibility) {
 				pausedForVisibility = false;
 				timeline.resume();
@@ -208,17 +289,19 @@
 		const handleVisibility = () => {
 			if (settled) return;
 			if (document.hidden) {
+				debugIntro('visibility-hidden');
+				pauseWatchdog();
 				if (timeline && timelineStarted && !timeline.paused()) {
 					pausedForVisibility = true;
 					timeline.pause();
 				}
 				return;
 			}
-			resumeOrComplete();
+			resumeRuntime('visibility');
 		};
 
-		const handlePageShow = () => resumeOrComplete();
-		const handleFocus = () => resumeOrComplete();
+		const handlePageShow = () => resumeRuntime('pageshow');
+		const handleFocus = () => resumeRuntime('focus');
 
 		const waitForImage = async (image: HTMLImageElement) => {
 			if (!image.complete) {
@@ -245,7 +328,7 @@
 		};
 
 		const waitForArtwork = async () => {
-			if (!intro || !heroImage) return;
+			if (!intro || !heroImage) return 'unavailable' as const;
 			const uniqueImages = new Map<string, HTMLImageElement>();
 			for (const image of [
 				...Array.from(intro.querySelectorAll<HTMLImageElement>('img')),
@@ -256,29 +339,35 @@
 				if (!uniqueImages.has(source)) uniqueImages.set(source, image);
 			}
 
-			await Promise.race([
-				Promise.all([...uniqueImages.values()].map(waitForImage)),
-				new Promise<void>((resolve) => {
+			const readiness = await Promise.race([
+				Promise.all([...uniqueImages.values()].map(waitForImage)).then(
+					() => 'ready' as const,
+				),
+				new Promise<'timeout'>((resolve) => {
 					assetReadinessTimer = window.setTimeout(() => {
 						assetReadinessTimer = 0;
 						clearImageWaiters();
-						resolve();
+						resolve('timeout');
 					}, ASSET_READINESS_TIMEOUT_MS);
 				}),
 			]);
 			window.clearTimeout(assetReadinessTimer);
 			assetReadinessTimer = 0;
 			clearImageWaiters();
+			debugIntro(`assets-${readiness}`);
+			return readiness;
 		};
 
 		const start = async () => {
-			startupWatchdog = window.setTimeout(completeIntro, STARTUP_WATCHDOG_MS);
 			document.addEventListener('visibilitychange', handleVisibility);
 			document.addEventListener('astro:before-swap', handleSwap, {
 				once: true,
 			});
 			window.addEventListener('pageshow', handlePageShow);
 			window.addEventListener('focus', handleFocus);
+			setIntroState('initializing', intro);
+			debugIntro('initialization-start');
+			armWatchdog();
 
 			if (
 				!intro ||
@@ -291,7 +380,7 @@
 				!indicator ||
 				passElements.length === 0
 			) {
-				completeIntro();
+				completeIntro('missing-dom');
 				return;
 			}
 
@@ -411,7 +500,10 @@
 				// Establish the shared pass origin before the first-paint gate reveals the world.
 				renderPasses(0);
 
-				timeline = gsap.timeline({ paused: true, onComplete: completeIntro });
+				timeline = gsap.timeline({
+					paused: true,
+					onComplete: () => completeIntro('timeline'),
+				});
 				timeline
 					.addLabel('terminal-velocity', 0)
 					.to(
@@ -460,13 +552,19 @@
 			}, intro);
 
 			void world.getBoundingClientRect();
+			setIntroState('playing', intro);
 			intro.dataset.sequenceReady = '';
+			debugIntro('first-visible-frame', {
+				reducedMotion,
+				timelineTime: timeline?.time() ?? null,
+			});
 			requestAnimationFrame(() => {
 				if (settled) return;
 				timelineStarted = true;
-				if (hardDeadlineElapsed()) {
-					completeIntro();
-				} else if (document.hidden) {
+				debugIntro('timeline-start', {
+					documentHidden: document.hidden,
+				});
+				if (document.hidden) {
 					pausedForVisibility = true;
 				} else {
 					timeline?.play();
@@ -477,12 +575,20 @@
 		freefallWindow.__freefallIntroCleanup = handleCleanup;
 		runtimeComplete = handleComplete;
 		import.meta.hot?.dispose(handleCleanup);
-		void start().catch(() => completeIntro());
+		void start().catch((error: unknown) => {
+			debugIntro('initialization-error', {
+				message: error instanceof Error ? error.message : String(error),
+			});
+			completeIntro('initialization-failure');
+		});
 	};
 
 	try {
 		initialiseFreefallIntro();
-	} catch {
-		completeIntro();
+	} catch (error) {
+		debugIntro('initialization-error', {
+			message: error instanceof Error ? error.message : String(error),
+		});
+		completeIntro('initialization-failure');
 	}
 </script>

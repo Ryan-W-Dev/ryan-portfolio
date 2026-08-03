@@ -41,6 +41,7 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 	gsap.registerPlugin(ScrollTrigger);
+	ScrollTrigger.config({ ignoreMobileResize: true });
 
 	const heroCloudWindow = window as Window & {
 		__heroCloudCleanup?: () => void;

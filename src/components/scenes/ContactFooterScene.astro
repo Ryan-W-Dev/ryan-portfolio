@@ -110,6 +110,9 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		let nextBlinkTimer = 0;
 		let openBlinkTimer = 0;
 		let doubleBlinkTimer = 0;
+		let viewportWidth = window.innerWidth;
+		let viewportHeight = window.innerHeight;
+		let viewportPortrait = viewportHeight > viewportWidth;
 		let targetClientX = window.innerWidth * 0.5;
 		let targetClientY = window.innerHeight * 0.45;
 		let hasPointerSample = false;
@@ -288,7 +291,7 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		);
 
 		let resizeFrame = 0;
-		const handleResize = () => {
+		const queueMotionBuild = () => {
 			window.cancelAnimationFrame(resizeFrame);
 			resizeFrame = window.requestAnimationFrame(() => {
 				restoreCursor();
@@ -296,6 +299,23 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 				ScrollTrigger.refresh();
 			});
 		};
+		const handleResize = () => {
+			const nextWidth = window.innerWidth;
+			const nextHeight = window.innerHeight;
+			const nextPortrait = nextHeight > nextWidth;
+			const widthChanged = Math.abs(nextWidth - viewportWidth) >= 1;
+			const heightChanged = Math.abs(nextHeight - viewportHeight) >= 1;
+			const meaningfulResize =
+				widthChanged ||
+				nextPortrait !== viewportPortrait ||
+				(nextWidth > 768 && heightChanged);
+			viewportWidth = nextWidth;
+			viewportHeight = nextHeight;
+			viewportPortrait = nextPortrait;
+			if (!meaningfulResize) return;
+			queueMotionBuild();
+		};
+		const handleMediaChange = () => queueMotionBuild();
 
 		const handleVisibility = () => {
 			scheduleBlink();
@@ -316,8 +336,8 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 			window.removeEventListener('pointermove', handlePointerMove);
 			window.removeEventListener('pointerout', handlePointerOut);
 			document.removeEventListener('visibilitychange', handleVisibility);
-			reducedMotion.removeEventListener('change', handleResize);
-			finePointer.removeEventListener('change', handleResize);
+			reducedMotion.removeEventListener('change', handleMediaChange);
+			finePointer.removeEventListener('change', handleMediaChange);
 			document.removeEventListener('astro:before-swap', cleanup);
 			window.cancelAnimationFrame(resizeFrame);
 			context?.revert();
@@ -333,8 +353,8 @@ import DirtBikeArtwork from '../DirtBikeArtwork.astro';
 		});
 		window.addEventListener('pointerout', handlePointerOut);
 		document.addEventListener('visibilitychange', handleVisibility);
-		reducedMotion.addEventListener('change', handleResize);
-		finePointer.addEventListener('change', handleResize);
+		reducedMotion.addEventListener('change', handleMediaChange);
+		finePointer.addEventListener('change', handleMediaChange);
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 		footerWindow.__footerMotionCleanup = cleanup;
 		import.meta.hot?.dispose(cleanup);

@@ -77,6 +77,9 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		let route: RoutePoint[] = [];
 		let renderedGuideWidth = 1;
 		let renderedGuideHeight = 1;
+		let viewportWidth = window.innerWidth;
+		let viewportHeight = window.innerHeight;
+		let viewportPortrait = viewportHeight > viewportWidth;
 		let visibilityRange: VisibilityRange = {
 			heroFadeStart: 0,
 			heroFadeEnd: 0,
@@ -280,10 +283,8 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 				(progress - from.progress) /
 					Math.max(to.progress - from.progress, 0.001),
 			);
-			const guideWidth = guide.offsetWidth;
-			const guideHeight = guide.offsetHeight;
-			const horizontalTravel = window.innerWidth - guideWidth;
-			const verticalTravel = window.innerHeight - guideHeight;
+			const horizontalTravel = window.innerWidth - renderedGuideWidth;
+			const verticalTravel = window.innerHeight - renderedGuideHeight;
 			let x = interpolate(from.x, to.x, segmentProgress) * horizontalTravel;
 			let y = interpolate(from.y, to.y, segmentProgress) * verticalTravel;
 			const rotation = interpolate(from.rotation, to.rotation, segmentProgress);
@@ -367,6 +368,19 @@ import DirtBikeArtwork from './DirtBikeArtwork.astro';
 		const footerCursorObserver = new MutationObserver(handleFooterCursorState);
 
 		const handleResize = () => {
+			const nextWidth = window.innerWidth;
+			const nextHeight = window.innerHeight;
+			const nextPortrait = nextHeight > nextWidth;
+			const widthChanged = Math.abs(nextWidth - viewportWidth) >= 1;
+			const heightChanged = Math.abs(nextHeight - viewportHeight) >= 1;
+			const meaningfulResize =
+				widthChanged ||
+				nextPortrait !== viewportPortrait ||
+				(nextWidth > 768 && heightChanged);
+			viewportWidth = nextWidth;
+			viewportHeight = nextHeight;
+			viewportPortrait = nextPortrait;
+			if (!meaningfulResize) return;
 			window.cancelAnimationFrame(resizeFrame);
 			resizeFrame = window.requestAnimationFrame(build);
 		};
