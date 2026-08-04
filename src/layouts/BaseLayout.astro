@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SpeedInsights from '@vercel/speed-insights/astro';
 
 interface Props {
 	title: string;
@@ -165,5 +166,6 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 	</head>
 	<body>
 		<slot />
+		<SpeedInsights />
 	</body>
 </html>
