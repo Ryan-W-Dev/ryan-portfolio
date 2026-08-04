@@ -21,6 +21,9 @@
 	const FALLBACK_DURATION_MS = 4300;
 	const REDUCED_FALLBACK_DURATION_MS = 900;
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
+	const RESTORED_SCROLL_POSITION_KEY = 'ryan-portfolio:scroll-position';
+	const RESTORED_SCROLL_STATE_KEY = '__ryanPortfolioScrollY';
+	const RESTORED_SCROLL_TOLERANCE = 2;
 	type IntroState =
 		| 'pending'
 		| 'initializing'
@@ -34,11 +37,34 @@
 		| 'watchdog'
 		| 'missing-dom'
 		| 'late-start'
+		| 'restored-scroll'
 		| 'initialization-failure';
 	const freefallWindow = window as Window & {
 		__freefallIntroCleanup?: () => void;
 		__freefallIntroState?: IntroState;
 	};
+	const navigationEntry = performance.getEntriesByType('navigation')[0] as
+		PerformanceNavigationTiming | undefined;
+	const restoredScrollPosition = (() => {
+		if (
+			navigationEntry?.type !== 'reload' &&
+			navigationEntry?.type !== 'back_forward'
+		)
+			return 0;
+		const historyState = window.history.state as Record<string, unknown> | null;
+		const historyPosition = Number(historyState?.[RESTORED_SCROLL_STATE_KEY]);
+		if (Number.isFinite(historyPosition)) return historyPosition;
+		try {
+			return Number.parseFloat(
+				window.sessionStorage.getItem(RESTORED_SCROLL_POSITION_KEY) ?? '0',
+			);
+		} catch {
+			return 0;
+		}
+	})();
+	const bypassIntroForRestoredScroll =
+		Number.isFinite(restoredScrollPosition) &&
+		restoredScrollPosition > RESTORED_SCROLL_TOLERANCE;
 
 	try {
 		freefallWindow.__freefallIntroCleanup?.();
@@ -98,11 +124,14 @@
 		document.documentElement.removeAttribute('data-intro-pending');
 		const arrival = document.querySelector<HTMLElement>('[data-arrival-scene]');
 		arrival?.setAttribute('data-intro-complete', '');
-		for (const element of [
-			arrival?.querySelector<HTMLElement>('[data-arrival-title]'),
-			arrival?.querySelector<HTMLElement>('[data-arrival-subtitle]'),
-			arrival?.querySelector<HTMLElement>('[data-scroll-indicator]'),
-		]) {
+		const title = arrival?.querySelector<HTMLElement>('[data-arrival-title]');
+		const subtitle = arrival?.querySelector<HTMLElement>(
+			'[data-arrival-subtitle]',
+		);
+		const indicator = arrival?.querySelector<HTMLElement>(
+			'[data-scroll-indicator]',
+		);
+		for (const element of [title, subtitle, indicator]) {
 			if (!element) continue;
 			for (const property of [
 				'opacity',
@@ -115,7 +144,10 @@
 			]) {
 				element.style.removeProperty(property);
 			}
+			element.style.opacity = '1';
+			element.style.visibility = 'visible';
 		}
+		if (title) title.style.transform = 'none';
 	};
 
 	const emergencyRelease = () => {
@@ -126,8 +158,26 @@
 		document.documentElement.style.removeProperty('scrollbar-gutter');
 		document.body.style.removeProperty('overflow');
 		document.body.style.removeProperty('touch-action');
-		history.scrollRestoration = 'auto';
 		revealHeroContent();
+	};
+
+	const waitForRestoredLayout = async () => {
+		if (document.readyState !== 'complete') {
+			await new Promise<void>((resolve) => {
+				const finish = () => {
+					window.removeEventListener('load', finish);
+					window.removeEventListener('pageshow', finish);
+					resolve();
+				};
+				window.addEventListener('load', finish);
+				window.addEventListener('pageshow', finish);
+			});
+		}
+		await new Promise<void>((resolve) => {
+			window.requestAnimationFrame(() => {
+				window.requestAnimationFrame(() => resolve());
+			});
+		});
 	};
 
 	const completeIntro = (
@@ -212,7 +262,6 @@
 				document.documentElement.style.getPropertyValue('scrollbar-gutter'),
 			bodyOverflow: document.body.style.overflow,
 			bodyTouchAction: document.body.style.touchAction,
-			scrollRestoration: history.scrollRestoration,
 		};
 		const imageWaitResolvers = new Set<() => void>();
 		let context: gsap.Context | undefined;
@@ -280,8 +329,6 @@
 			}
 			document.body.style.overflow = original.bodyOverflow;
 			document.body.style.touchAction = original.bodyTouchAction;
-			history.scrollRestoration = original.scrollRestoration;
-			window.scrollTo(0, 0);
 		};
 
 		const removeLifecycleListeners = () => {
@@ -434,6 +481,15 @@
 			window.addEventListener('focus', handleFocus);
 			setIntroState('initializing', intro);
 			debugIntro('initialization-start');
+			if (bypassIntroForRestoredScroll) {
+				debugIntro('restored-scroll-detected', {
+					navigationType: navigationEntry?.type,
+					restoredScrollPosition,
+				});
+				await waitForRestoredLayout();
+				completeIntro('restored-scroll', true);
+				return;
+			}
 			armWatchdog();
 
 			if (
@@ -466,8 +522,6 @@
 			}
 			document.body.style.overflow = 'hidden';
 			document.body.style.touchAction = 'none';
-			history.scrollRestoration = 'manual';
-			window.scrollTo(0, 0);
 			if (performance.now() - introStartedAt > 350) {
 				scheduleFallbackCompletion('late-start');
 				return;

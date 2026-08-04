@@ -43,6 +43,8 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	gsap.registerPlugin(ScrollTrigger);
 	ScrollTrigger.config({ ignoreMobileResize: true });
 	const FREEFALL_COMPLETE_EVENT = 'freefall:intro-complete';
+	const RESTORED_SCROLL_POSITION_KEY = 'ryan-portfolio:scroll-position';
+	const RESTORED_SCROLL_STATE_KEY = '__ryanPortfolioScrollY';
 
 	const heroCloudWindow = window as Window & {
 		__heroCloudCleanup?: () => void;
@@ -57,17 +59,141 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		);
 		const grade = scene?.querySelector<HTMLElement>('[data-hero-grade]');
 		const content = scene?.querySelector<HTMLElement>('[data-arrival-content]');
+		const title = scene?.querySelector<HTMLElement>('[data-arrival-title]');
+		const subtitle = scene?.querySelector<HTMLElement>(
+			'[data-arrival-subtitle]',
+		);
 		const indicator = scene?.querySelector<HTMLElement>(
 			'[data-scroll-indicator]',
 		);
-		if (!scene || !clouds || !landscape || !grade || !content || !indicator)
+		if (
+			!scene ||
+			!clouds ||
+			!landscape ||
+			!grade ||
+			!content ||
+			!title ||
+			!subtitle ||
+			!indicator
+		)
 			return;
 
 		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const mobileBackground = window.matchMedia('(max-width: 64rem)');
 		const topTolerance = 2;
-		let introComplete = scene.hasAttribute('data-intro-complete');
+		const navigationEntry = performance.getEntriesByType('navigation')[0] as
+			PerformanceNavigationTiming | undefined;
+		let pendingRestoredScrollPosition = (() => {
+			if (
+				navigationEntry?.type !== 'reload' &&
+				navigationEntry?.type !== 'back_forward'
+			)
+				return undefined;
+			const historyState = window.history.state as Record<
+				string,
+				unknown
+			> | null;
+			const historyPosition = Number(historyState?.[RESTORED_SCROLL_STATE_KEY]);
+			if (Number.isFinite(historyPosition) && historyPosition > topTolerance)
+				return historyPosition;
+			try {
+				const storedPosition = Number.parseFloat(
+					window.sessionStorage.getItem(RESTORED_SCROLL_POSITION_KEY) ?? '0',
+				);
+				return Number.isFinite(storedPosition) && storedPosition > topTolerance
+					? storedPosition
+					: undefined;
+			} catch {
+				return undefined;
+			}
+		})();
+		const introRoot = document.querySelector<HTMLElement>(
+			'[data-freefall-intro]',
+		);
+		const introState = (window as Window & { __freefallIntroState?: string })
+			.__freefallIntroState;
+		let introComplete =
+			scene.hasAttribute('data-intro-complete') ||
+			introRoot?.hidden === true ||
+			!document.documentElement.hasAttribute('data-intro-pending') ||
+			introState === 'complete' ||
+			introState === 'recovered';
 		let context: gsap.Context | undefined;
 		let stateFrame = 0;
+		let syncFrame = 0;
+		let syncSettleFrame = 0;
+		let backgroundResizeTimer = 0;
+		let layoutWidth = window.innerWidth;
+		let layoutPortrait = window.innerHeight > window.innerWidth;
+		let layoutMobile = mobileBackground.matches;
+
+		const resolveHeroContent = () => {
+			introComplete = true;
+			scene.setAttribute('data-intro-complete', '');
+			gsap.set(title, {
+				autoAlpha: 1,
+				yPercent: 0,
+				scale: 1,
+				clearProps: 'willChange',
+			});
+			gsap.set([subtitle, indicator], {
+				autoAlpha: 1,
+				clearProps: 'willChange',
+			});
+		};
+
+		const captureStableBackgroundGeometry = () => {
+			window.clearTimeout(backgroundResizeTimer);
+			backgroundResizeTimer = 0;
+			if (!mobileBackground.matches) {
+				scene.style.removeProperty('--hero-background-block-size');
+				return;
+			}
+			scene.style.removeProperty('--hero-background-block-size');
+			const stableHeight = Math.max(
+				landscape.getBoundingClientRect().height,
+				window.innerHeight,
+				window.visualViewport?.height ?? 0,
+			);
+			scene.style.setProperty(
+				'--hero-background-block-size',
+				`${Math.ceil(stableHeight * window.devicePixelRatio) / window.devicePixelRatio}px`,
+			);
+		};
+
+		const scheduleScrollSync = () => {
+			window.cancelAnimationFrame(syncFrame);
+			window.cancelAnimationFrame(syncSettleFrame);
+			syncFrame = window.requestAnimationFrame(() => {
+				syncFrame = 0;
+				syncSettleFrame = window.requestAnimationFrame(() => {
+					syncSettleFrame = 0;
+					if (!introComplete) return;
+					ScrollTrigger.refresh();
+					if (pendingRestoredScrollPosition !== undefined) {
+						const restoredPosition = Math.min(
+							pendingRestoredScrollPosition,
+							Math.max(
+								0,
+								document.documentElement.scrollHeight - window.innerHeight,
+							),
+						);
+						pendingRestoredScrollPosition = undefined;
+						window.scrollTo({ top: restoredPosition, behavior: 'auto' });
+					}
+					ScrollTrigger.update();
+					requestUpdate();
+				});
+			});
+		};
+
+		const scheduleBackgroundGeometry = () => {
+			window.clearTimeout(backgroundResizeTimer);
+			backgroundResizeTimer = window.setTimeout(() => {
+				captureStableBackgroundGeometry();
+				scheduleScrollSync();
+			}, 180);
+		};
 		const update = () => {
 			const atDocumentTop = window.scrollY <= topTolerance;
 			const sceneBounds = scene.getBoundingClientRect();
@@ -90,15 +216,77 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 			});
 		};
 		const handleVisibility = () => requestUpdate();
-		const handlePageShow = () => requestUpdate();
-		const handleViewportChange = () => requestUpdate();
-		const handleIntroComplete = () => {
-			introComplete = true;
+		const handlePageShow = () => {
+			const currentState = (
+				window as Window & { __freefallIntroState?: string }
+			).__freefallIntroState;
+			if (
+				scene.hasAttribute('data-intro-complete') ||
+				introRoot?.hidden === true ||
+				!document.documentElement.hasAttribute('data-intro-pending') ||
+				currentState === 'complete' ||
+				currentState === 'recovered'
+			)
+				resolveHeroContent();
 			requestUpdate();
+			scheduleScrollSync();
 		};
+		const handleVisualViewportChange = () => requestUpdate();
+		const handleViewportChange = () => {
+			requestUpdate();
+			const nextWidth = window.innerWidth;
+			const nextPortrait = window.innerHeight > window.innerWidth;
+			const nextMobile = mobileBackground.matches;
+			const meaningfulChange =
+				Math.abs(nextWidth - layoutWidth) >= 1 ||
+				nextPortrait !== layoutPortrait ||
+				nextMobile !== layoutMobile;
+			layoutWidth = nextWidth;
+			layoutPortrait = nextPortrait;
+			layoutMobile = nextMobile;
+			if (meaningfulChange) scheduleBackgroundGeometry();
+		};
+		const handleOrientationChange = () => {
+			requestUpdate();
+			scheduleBackgroundGeometry();
+		};
+		const handleIntroComplete = () => {
+			resolveHeroContent();
+			requestUpdate();
+			scheduleScrollSync();
+		};
+		const persistScrollPosition = () => {
+			const scrollPosition = window.scrollY;
+			try {
+				const historyState = window.history.state;
+				window.history.replaceState(
+					{
+						...(historyState && typeof historyState === 'object'
+							? historyState
+							: {}),
+						[RESTORED_SCROLL_STATE_KEY]: scrollPosition,
+					},
+					'',
+				);
+			} catch {
+				// Session storage remains available as a fallback for restricted history state.
+			}
+			try {
+				window.sessionStorage.setItem(
+					RESTORED_SCROLL_POSITION_KEY,
+					String(scrollPosition),
+				);
+			} catch {
+				// Scroll restoration remains native when session storage is unavailable.
+			}
+		};
+
+		captureStableBackgroundGeometry();
+		if (introComplete) resolveHeroContent();
 
 		if (!reducedMotion.matches)
 			context = gsap.context(() => {
+				gsap.set(content, { yPercent: 0, autoAlpha: 1 });
 				const timeline = gsap.timeline({
 					defaults: { ease: 'none' },
 					scrollTrigger: {
@@ -118,9 +306,32 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 				});
 
 				timeline
-					.to(grade, { opacity: 0.78 }, 0)
-					.to(content, { yPercent: -13, autoAlpha: 0 }, 0.48)
-					.to(indicator, { yPercent: -28, autoAlpha: 0 }, 0.28);
+					.fromTo(
+						grade,
+						{ opacity: 1 },
+						{ opacity: 0.78, immediateRender: false },
+						0,
+					)
+					.fromTo(
+						content,
+						{ yPercent: 0, autoAlpha: 1 },
+						{
+							yPercent: -13,
+							autoAlpha: 0,
+							immediateRender: false,
+						},
+						0.48,
+					)
+					.fromTo(
+						indicator,
+						{ yPercent: 0, autoAlpha: 1 },
+						{
+							yPercent: -28,
+							autoAlpha: 0,
+							immediateRender: false,
+						},
+						0.28,
+					);
 			}, scene);
 		else {
 			update();
@@ -137,18 +348,23 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 			window.removeEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete);
 			window.removeEventListener('scroll', requestUpdate);
 			window.removeEventListener('pageshow', handlePageShow);
-			window.removeEventListener('orientationchange', handleViewportChange);
+			window.removeEventListener('pagehide', persistScrollPosition);
+			window.removeEventListener('orientationchange', handleOrientationChange);
 			window.removeEventListener('resize', handleViewportChange);
 			window.visualViewport?.removeEventListener(
 				'resize',
-				handleViewportChange,
+				handleVisualViewportChange,
 			);
 			reducedMotion.removeEventListener('change', handleMotionChange);
 			document.removeEventListener('astro:before-swap', cleanup);
 			window.cancelAnimationFrame(stateFrame);
+			window.cancelAnimationFrame(syncFrame);
+			window.cancelAnimationFrame(syncSettleFrame);
+			window.clearTimeout(backgroundResizeTimer);
 			context?.revert();
 			clouds.removeAttribute('data-clouds-active');
 			scene.removeAttribute('data-hero-active');
+			scene.style.removeProperty('--hero-background-block-size');
 			if (heroCloudWindow.__heroCloudCleanup === cleanup)
 				delete heroCloudWindow.__heroCloudCleanup;
 		};
@@ -156,11 +372,16 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		document.addEventListener('visibilitychange', handleVisibility);
 		window.addEventListener('scroll', requestUpdate, { passive: true });
 		window.addEventListener('pageshow', handlePageShow);
-		window.addEventListener('orientationchange', handleViewportChange);
+		window.addEventListener('pagehide', persistScrollPosition);
+		window.addEventListener('orientationchange', handleOrientationChange);
 		window.addEventListener('resize', handleViewportChange, { passive: true });
-		window.visualViewport?.addEventListener('resize', handleViewportChange, {
-			passive: true,
-		});
+		window.visualViewport?.addEventListener(
+			'resize',
+			handleVisualViewportChange,
+			{
+				passive: true,
+			},
+		);
 		reducedMotion.addEventListener('change', handleMotionChange);
 		window.addEventListener(FREEFALL_COMPLETE_EVENT, handleIntroComplete, {
 			once: true,
@@ -168,6 +389,7 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 		document.addEventListener('astro:before-swap', cleanup, { once: true });
 		heroCloudWindow.__heroCloudCleanup = cleanup;
 		import.meta.hot?.dispose(cleanup);
+		if (introComplete) scheduleScrollSync();
 	};
 
 	initialiseHeroClouds();
@@ -212,6 +434,11 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	}
 
 	@media (max-width: 64rem) {
+		.hero-landscape {
+			inset-block-end: auto;
+			block-size: var(--hero-background-block-size, 100lvh);
+		}
+
 		.hero-clouds {
 			filter: none;
 		}
