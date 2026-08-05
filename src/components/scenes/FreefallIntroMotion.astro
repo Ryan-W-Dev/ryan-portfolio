@@ -246,6 +246,9 @@
 		const heroImage = arrival?.querySelector<HTMLImageElement>(
 			'[data-hero-landscape]',
 		);
+		const heroPicture = arrival?.querySelector<HTMLPictureElement>(
+			'[data-hero-picture]',
+		);
 		const title = arrival?.querySelector<HTMLElement>('[data-arrival-title]');
 		const subtitle = arrival?.querySelector<HTMLElement>(
 			'[data-arrival-subtitle]',
@@ -263,7 +266,8 @@
 			bodyOverflow: document.body.style.overflow,
 			bodyTouchAction: document.body.style.touchAction,
 		};
-		const imageWaitResolvers = new Set<() => void>();
+		const introImageWaitResolvers = new Set<() => void>();
+		const heroImageWaitResolvers = new Set<() => void>();
 		let context: gsap.Context | undefined;
 		let timeline: gsap.core.Timeline | undefined;
 		let startupWatchdog = 0;
@@ -273,10 +277,13 @@
 		let settled = false;
 		let timelineStarted = false;
 		let pausedForVisibility = false;
+		let heroLoadFrame = 0;
+		let heroArtworkReady = false;
+		let heroArtworkPromise: Promise<boolean> | undefined;
 
-		const clearImageWaiters = () => {
-			for (const resolve of [...imageWaitResolvers]) resolve();
-			imageWaitResolvers.clear();
+		const clearImageWaiters = (resolvers: Set<() => void>) => {
+			for (const resolve of [...resolvers]) resolve();
+			resolvers.clear();
 		};
 
 		const pauseWatchdog = () => {
@@ -314,7 +321,10 @@
 			window.clearTimeout(assetReadinessTimer);
 			startupWatchdog = 0;
 			assetReadinessTimer = 0;
-			clearImageWaiters();
+			clearImageWaiters(introImageWaitResolvers);
+			clearImageWaiters(heroImageWaitResolvers);
+			window.cancelAnimationFrame(heroLoadFrame);
+			heroLoadFrame = 0;
 		};
 
 		const restorePage = () => {
@@ -417,16 +427,19 @@
 		const handlePageShow = () => resumeRuntime('pageshow');
 		const handleFocus = () => resumeRuntime('focus');
 
-		const waitForImage = async (image: HTMLImageElement) => {
+		const waitForImage = async (
+			image: HTMLImageElement,
+			resolvers: Set<() => void>,
+		) => {
 			if (!image.complete) {
 				await new Promise<void>((resolve) => {
 					const settle = () => {
 						image.removeEventListener('load', settle);
 						image.removeEventListener('error', settle);
-						imageWaitResolvers.delete(settle);
+						resolvers.delete(settle);
 						resolve();
 					};
-					imageWaitResolvers.add(settle);
+					resolvers.add(settle);
 					image.addEventListener('load', settle, { once: true });
 					image.addEventListener('error', settle, { once: true });
 				});
@@ -441,33 +454,74 @@
 			}
 		};
 
-		const waitForArtwork = async () => {
-			if (!intro || !heroImage) return 'unavailable' as const;
+		const activateHeroArtwork = () => {
+			if (!heroPicture || !heroImage) return Promise.resolve(false);
+			if (heroArtworkPromise) return heroArtworkPromise;
+
+			for (const picture of document.querySelectorAll<HTMLPictureElement>(
+				'[data-deferred-hero-picture]',
+			)) {
+				if (!picture.hasAttribute('data-hero-artwork-activated')) {
+					picture.setAttribute('data-hero-artwork-activated', '');
+					for (const source of picture.querySelectorAll<HTMLSourceElement>(
+						'source[data-srcset]',
+					)) {
+						const sourceSet = source.dataset.srcset;
+						if (sourceSet) source.srcset = sourceSet;
+					}
+					const image =
+						picture.querySelector<HTMLImageElement>('img[data-src]');
+					if (!image) continue;
+					const sourceSet = image.dataset.srcset;
+					if (sourceSet) image.srcset = sourceSet;
+					const source = image.dataset.src;
+					if (source) image.src = source;
+				}
+			}
+			heroImage.fetchPriority = 'auto';
+			debugIntro('hero-artwork-requested');
+
+			heroArtworkPromise = waitForImage(heroImage, heroImageWaitResolvers).then(
+				() => {
+					heroArtworkReady = heroImage.naturalWidth > 0;
+					debugIntro('hero-artwork-decoded', {
+						ready: heroArtworkReady,
+						currentSource: heroImage.currentSrc,
+					});
+					return heroArtworkReady;
+				},
+			);
+			return heroArtworkPromise;
+		};
+
+		const waitForIntroArtwork = async () => {
+			if (!intro) return 'unavailable' as const;
 			const uniqueImages = new Map<string, HTMLImageElement>();
-			for (const image of [
-				...Array.from(intro.querySelectorAll<HTMLImageElement>('img')),
-				heroImage,
-			]) {
+			for (const image of Array.from(
+				intro.querySelectorAll<HTMLImageElement>('img'),
+			)) {
 				const source =
 					image.currentSrc || image.getAttribute('src') || image.src;
 				if (!uniqueImages.has(source)) uniqueImages.set(source, image);
 			}
 
 			const readiness = await Promise.race([
-				Promise.all([...uniqueImages.values()].map(waitForImage)).then(
-					() => 'ready' as const,
-				),
+				Promise.all(
+					[...uniqueImages.values()].map((image) =>
+						waitForImage(image, introImageWaitResolvers),
+					),
+				).then(() => 'ready' as const),
 				new Promise<'timeout'>((resolve) => {
 					assetReadinessTimer = window.setTimeout(() => {
 						assetReadinessTimer = 0;
-						clearImageWaiters();
+						clearImageWaiters(introImageWaitResolvers);
 						resolve('timeout');
 					}, ASSET_READINESS_TIMEOUT_MS);
 				}),
 			]);
 			window.clearTimeout(assetReadinessTimer);
 			assetReadinessTimer = 0;
-			clearImageWaiters();
+			clearImageWaiters(introImageWaitResolvers);
 			debugIntro(`assets-${readiness}`);
 			return readiness;
 		};
@@ -482,6 +536,7 @@
 			setIntroState('initializing', intro);
 			debugIntro('initialization-start');
 			if (bypassIntroForRestoredScroll) {
+				void activateHeroArtwork();
 				debugIntro('restored-scroll-detected', {
 					navigationType: navigationEntry?.type,
 					restoredScrollPosition,
@@ -503,6 +558,7 @@
 				!indicator ||
 				passElements.length === 0
 			) {
+				void activateHeroArtwork();
 				scheduleFallbackCompletion('missing-dom');
 				return;
 			}
@@ -523,11 +579,12 @@
 			document.body.style.overflow = 'hidden';
 			document.body.style.touchAction = 'none';
 			if (performance.now() - introStartedAt > 350) {
+				void activateHeroArtwork();
 				scheduleFallbackCompletion('late-start');
 				return;
 			}
 
-			void waitForArtwork();
+			void waitForIntroArtwork();
 
 			const reducedMotion = window.matchMedia(
 				'(prefers-reduced-motion: reduce)',
@@ -663,6 +720,15 @@
 							0,
 						)
 						.addLabel('hero-handoff', handoffStart)
+						.call(
+							() =>
+								debugIntro('hero-handoff-start', {
+									heroArtworkReady,
+									currentSource: heroImage.currentSrc,
+								}),
+							[],
+							handoffStart,
+						)
 						.to(
 							world,
 							{
@@ -716,6 +782,10 @@
 				} else {
 					timeline?.play();
 				}
+				heroLoadFrame = requestAnimationFrame(() => {
+					heroLoadFrame = 0;
+					if (!settled) void activateHeroArtwork();
+				});
 			});
 		};
 

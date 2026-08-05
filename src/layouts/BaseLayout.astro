@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 
 interface Props {
@@ -52,14 +53,19 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 		<link
 			rel="preload"
 			as="image"
-			href="/assets/freefall/freefall-environment.webp"
-			media="(min-width: 64.001rem)"
+			href="/assets/freefall/freefall-environment-1920.avif"
+			imagesrcset="/assets/freefall/freefall-environment-1280.avif 1280w, /assets/freefall/freefall-environment-1600.avif 1600w, /assets/freefall/freefall-environment-1920.avif 1920w"
+			imagesizes="100vw"
+			type="image/avif"
+			media="(min-width: 64.001rem) and (max-width: 100rem)"
 			fetchpriority="high"
 		/>
 		<link
 			rel="preload"
 			as="image"
-			href="/assets/hero/hero-desert.webp"
+			href="/assets/freefall/freefall-environment.webp"
+			type="image/webp"
+			media="(min-width: 100.001rem)"
 			fetchpriority="high"
 		/>
 		<style is:inline>
@@ -91,8 +97,22 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 				position: absolute;
 				inset: 0;
 				overflow: hidden;
-				background: #0759b6 url('/assets/freefall/freefall-environment.webp')
-					center / cover no-repeat;
+				background: #0759b6;
+			}
+
+			html[data-intro-pending] [data-freefall-base-art],
+			html[data-intro-pending] [data-freefall-base-art] img {
+				position: absolute;
+				inset: 0;
+				display: block;
+				inline-size: 100%;
+				block-size: 100%;
+			}
+
+			html[data-intro-pending] [data-freefall-base-art] img {
+				max-inline-size: none;
+				object-fit: cover;
+				object-position: center;
 			}
 
 			html[data-intro-pending] [data-arrival-content],
@@ -155,17 +175,40 @@ const socialImageUrl = new URL('/assets/hero/hero-desert.webp', site);
 					animation-delay: 0.9s;
 				}
 			}
-
-			@media (max-width: 64rem) {
-				html[data-intro-pending] [data-freefall-world] {
-					background-image: url('/assets/freefall/freefall-environment-mobile.webp');
-				}
-			}
 		</style>
 		<title>{title}</title>
 	</head>
 	<body>
 		<slot />
+		<script is:inline>
+			(() => {
+				const activateDeferredHeroArtwork = () => {
+					for (const picture of document.querySelectorAll(
+						'[data-deferred-hero-picture]',
+					)) {
+						if (picture.hasAttribute('data-hero-artwork-activated')) continue;
+						picture.setAttribute('data-hero-artwork-activated', '');
+						for (const source of picture.querySelectorAll(
+							'source[data-srcset]',
+						)) {
+							const sourceSet = source.getAttribute('data-srcset');
+							if (sourceSet) source.setAttribute('srcset', sourceSet);
+						}
+						const image = picture.querySelector('img[data-src]');
+						if (!image) continue;
+						const sourceSet = image.getAttribute('data-srcset');
+						if (sourceSet) image.setAttribute('srcset', sourceSet);
+						const source = image.getAttribute('data-src');
+						if (source) image.setAttribute('src', source);
+					}
+				};
+
+				requestAnimationFrame(() => {
+					requestAnimationFrame(activateDeferredHeroArtwork);
+				});
+			})();
+		</script>
+		<Analytics />
 		<SpeedInsights />
 	</body>
 </html>

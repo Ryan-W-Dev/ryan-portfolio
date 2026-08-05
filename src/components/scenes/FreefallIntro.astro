@@ -9,6 +9,11 @@ const terrainPasses = [
 	{ family: 'terrain-near', phase: '0.34' },
 	{ family: 'terrain-near', phase: '0.84' },
 ] as const;
+
+const desktopAvifSrcset =
+	'/assets/freefall/freefall-environment-1280.avif 1280w, /assets/freefall/freefall-environment-1600.avif 1600w, /assets/freefall/freefall-environment-1920.avif 1920w';
+const desktopWebpSrcset =
+	'/assets/freefall/freefall-environment-1280.webp 1280w, /assets/freefall/freefall-environment-1600.webp 1600w, /assets/freefall/freefall-environment.webp 1920w';
 ---
 
 <div
@@ -18,6 +23,29 @@ const terrainPasses = [
 	aria-hidden="true"
 >
 	<div class="freefall-world" data-freefall-world>
+		<picture class="freefall-base-art" data-freefall-base-art>
+			<source
+				media="(max-width: 64rem)"
+				srcset="/assets/freefall/freefall-environment-mobile.webp"
+			/>
+			<source
+				media="(max-width: 100rem)"
+				type="image/avif"
+				srcset={desktopAvifSrcset}
+				sizes="100vw"
+			/>
+			<source type="image/webp" srcset={desktopWebpSrcset} sizes="100vw" />
+			<img
+				src="/assets/freefall/freefall-environment.webp"
+				alt=""
+				width="1920"
+				height="1080"
+				fetchpriority="high"
+				decoding="async"
+				draggable="false"
+			/>
+		</picture>
+
 		<div class="terrain-camera" data-terrain-camera>
 			{
 				terrainPasses.map((pass) => (
@@ -25,6 +53,17 @@ const terrainPasses = [
 						<source
 							media="(max-width: 64rem)"
 							srcset="/assets/freefall/freefall-environment-mobile.webp"
+						/>
+						<source
+							media="(max-width: 100rem)"
+							type="image/avif"
+							srcset={desktopAvifSrcset}
+							sizes="100vw"
+						/>
+						<source
+							type="image/webp"
+							srcset={desktopWebpSrcset}
+							sizes="100vw"
 						/>
 						<img
 							class={`terrain-pass ${pass.family}`}
@@ -155,6 +194,7 @@ const terrainPasses = [
 	}
 
 	.freefall-world,
+	.freefall-base-art,
 	.terrain-camera,
 	.fall-clouds,
 	.speed-burst,
@@ -166,8 +206,7 @@ const terrainPasses = [
 	.freefall-world {
 		--hero-reveal: 0%;
 		overflow: hidden;
-		background: var(--cobalt) url('/assets/freefall/freefall-environment.webp')
-			center / cover no-repeat;
+		background: var(--cobalt);
 		visibility: visible;
 		-webkit-mask-image: radial-gradient(
 			circle at 50% 50%,
@@ -179,6 +218,18 @@ const terrainPasses = [
 			transparent 0 var(--hero-reveal),
 			#000 calc(var(--hero-reveal) + 0.12%)
 		);
+	}
+
+	.freefall-base-art img {
+		position: absolute;
+		inset: 0;
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: none;
+		object-fit: cover;
+		object-position: center;
+		user-select: none;
 	}
 
 	.terrain-camera {
@@ -415,10 +466,6 @@ const terrainPasses = [
 	}
 
 	@media (max-width: 64rem) {
-		.freefall-world {
-			background-image: url('/assets/freefall/freefall-environment-mobile.webp');
-		}
-
 		.terrain-far,
 		.terrain-mid,
 		.terrain-near,

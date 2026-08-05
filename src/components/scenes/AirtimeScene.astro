@@ -1,5 +1,10 @@
 ---
 import ComicCloudTrack from '../ComicCloudTrack.astro';
+
+const heroAvifSrcset =
+	'/assets/hero/hero-desert-1280.avif 1280w, /assets/hero/hero-desert-1600.avif 1600w, /assets/hero/hero-desert-1920.avif 1920w';
+const heroWebpSrcset =
+	'/assets/hero/hero-desert-1280.webp 1280w, /assets/hero/hero-desert-1600.webp 1600w, /assets/hero/hero-desert.webp 1920w';
 ---
 
 <section
@@ -7,16 +12,29 @@ import ComicCloudTrack from '../ComicCloudTrack.astro';
 	data-transition-copy-scene
 	aria-labelledby="transition-copy"
 >
-	<img
-		class="transition-landscape"
-		src="/assets/hero/hero-desert.webp"
-		alt=""
-		width="1920"
-		height="1080"
-		loading="lazy"
-		decoding="async"
-		draggable="false"
-	/>
+	<picture data-deferred-hero-picture>
+		<source
+			media="(max-width: 100rem)"
+			type="image/avif"
+			data-srcset={heroAvifSrcset}
+			sizes="100vw"
+		/>
+		<source type="image/webp" data-srcset={heroWebpSrcset} sizes="100vw" />
+		<img
+			class="transition-landscape"
+			src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+			data-src="/assets/hero/hero-desert.webp"
+			data-srcset={heroWebpSrcset}
+			sizes="100vw"
+			alt=""
+			width="1920"
+			height="1080"
+			fetchpriority="low"
+			loading="lazy"
+			decoding="async"
+			draggable="false"
+		/>
+	</picture>
 	<div class="transition-grade" aria-hidden="true"></div>
 	<div class="transition-cloud" aria-hidden="true" data-transition-cloud>
 		<ComicCloudTrack depth="far" />
